@@ -46,7 +46,7 @@ nga-extension/
 
 ### 快捷键
 
-- `Alt + N`：切换摸鱼模式
+- `Ctrl/Cmd + Shift + N`：切换摸鱼模式（跨平台）
 
 ## 兼容性
 

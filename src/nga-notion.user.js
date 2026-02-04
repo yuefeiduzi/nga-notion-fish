@@ -403,9 +403,9 @@
         // 注册菜单命令
         GM_registerMenuCommand('切换摸鱼模式', toggleMode);
 
-        // 快捷键
+        // 快捷键: Ctrl/Cmd + Shift + N (跨平台)
         document.addEventListener('keydown', (e) => {
-            if (e.altKey && e.key === 'n') {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
                 e.preventDefault();
                 toggleMode();
             }
