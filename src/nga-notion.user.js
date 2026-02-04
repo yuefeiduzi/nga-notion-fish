@@ -1,333 +1,25 @@
 // ==UserScript==
 // @name         NGA Notion 摸鱼模式
 // @namespace    https://ngabbs.com/
-// @version      1.0.0
+// @version      2.0.0
 // @description  将 NGA 伪装成 Notion 风格的文档界面，方便摸鱼
 // @author       Ross
 // @match        https://ngabbs.com/*
 // @match        https://*.ngabbs.com/*
+// @match        https://bbs.nga.cn/*
 // @grant        GM_addStyle
 // @grant        GM_registerMenuCommand
 // @run-at       document-start
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     // ==================== 配置 ====================
     const CONFIG = {
         enabled: false,
-        styleVersion: '1.0.0',
+        styleVersion: '2.0.0',
     };
-
-    // ==================== Notion 风格样式 ====================
-    const NOTION_STYLES = `
-        /* 基础重置 */
-        * {
-            margin: 0 !important;
-            padding: 0 !important;
-            box-sizing: border-box !important;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif !important;
-            background-color: #ffffff !important;
-            color: #37352f !important;
-            line-height: 1.5 !important;
-        }
-
-        /* 隐藏原站元素 */
-        .header, .nav, .footer, .sidebar, .ads, .banner,
-        [class*="ad-"], [class*="banner"], [id*="ad-"],
-        .menu, .toolbar, .quick-reply, .signature,
-        #footer, #header, #nv_forum, .modac, .pop.win {
-            display: none !important;
-        }
-
-        /* 主容器 - Notion 风格 */
-        #notion-container {
-            display: block !important;
-            max-width: 900px !important;
-            margin: 0 auto !important;
-            padding: 48px 96px !important;
-        }
-
-        /* 页面标题 */
-        .notion-title {
-            font-size: 40px !important;
-            font-weight: 700 !important;
-            color: #37352f !important;
-            margin-bottom: 24px !important;
-            padding-bottom: 8px !important;
-            border-bottom: none !important;
-        }
-
-        /* 帖子列表伪装成文档块 */
-        .notion-block {
-            padding: 8px 0 !important;
-            border-bottom: 1px solid #e9e9e8 !important;
-            transition: background-color 0.1s ease;
-        }
-
-        .notion-block:hover {
-            background-color: rgba(55, 53, 47, 0.04) !important;
-        }
-
-        /* 帖子标题 - 类似 Notion 标题块 */
-        .notion-block-title {
-            font-size: 16px !important;
-            font-weight: 600 !important;
-            color: #37352f !important;
-            margin-bottom: 4px !important;
-        }
-
-        .notion-block-title a {
-            color: #37352f !important;
-            text-decoration: none !important;
-        }
-
-        .notion-block-title a:hover {
-            color: #9b9a97 !important;
-        }
-
-        /* 帖子摘要 - 类似 Notion 文本块 */
-        .notion-block-content {
-            font-size: 14px !important;
-            color: #787774 !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            display: -webkit-box !important;
-            -webkit-line-clamp: 2 !important;
-            -webkit-box-orient: vertical !important;
-        }
-
-        /* 作者信息 */
-        .notion-block-author {
-            font-size: 12px !important;
-            color: #9b9a97 !important;
-            margin-top: 4px !important;
-        }
-
-        /* 时间戳 */
-        .notion-block-time {
-            font-size: 12px !important;
-            color: #9b9a97 !important;
-        }
-
-        /* 分类标签 - 伪装成面包屑 */
-        .notion-block-tag {
-            display: inline-block !important;
-            font-size: 12px !important;
-            color: #787774 !important;
-            margin-right: 8px !important;
-        }
-
-        /* 帖子内容页样式 */
-        .notion-post-content {
-            font-size: 16px !important;
-            line-height: 1.6 !important;
-            color: #37352f !important;
-        }
-
-        .notion-post-content p {
-            margin-bottom: 16px !important;
-        }
-
-        .notion-post-content img {
-            max-width: 100% !important;
-            border-radius: 4px !important;
-        }
-
-        /* 评论区伪装 */
-        .notion-comments {
-            margin-top: 48px !important;
-            padding-top: 32px !important;
-            border-top: 1px solid #e9e9e8 !important;
-        }
-
-        .notion-comment {
-            padding: 12px 0 !important;
-            border-bottom: 1px solid #f4f4f3 !important;
-        }
-
-        /* 分页伪装 */
-        .notion-pagination {
-            display: flex !important;
-            gap: 8px !important;
-            margin-top: 32px !important;
-            padding-top: 24px !important;
-        }
-
-        .notion-pagination a,
-        .notion-pagination span {
-            padding: 6px 12px !important;
-            border-radius: 4px !important;
-            font-size: 14px !important;
-            color: #37352f !important;
-            text-decoration: none !important;
-            background: transparent !important;
-        }
-
-        .notion-pagination a:hover {
-            background: rgba(55, 53, 47, 0.08) !important;
-        }
-
-        .notion-pagination .current {
-            background: rgba(55, 53, 47, 0.08) !important;
-            font-weight: 500 !important;
-        }
-
-        /* 状态提示 */
-        #notion-status {
-            position: fixed !important;
-            top: 16px !important;
-            right: 16px !important;
-            padding: 8px 16px !important;
-            background: #37352f !important;
-            color: #ffffff !important;
-            font-size: 13px !important;
-            border-radius: 4px !important;
-            opacity: 0 !important;
-            transition: opacity 0.3s ease !important;
-            z-index: 999999 !important;
-        }
-
-        #notion-status.show {
-            opacity: 1 !important;
-        }
-
-        /* 返回按钮 */
-        #notion-back {
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 4px !important;
-            padding: 4px 8px !important;
-            margin-bottom: 24px !important;
-            font-size: 14px !important;
-            color: #787774 !important;
-            cursor: pointer !important;
-            border-radius: 4px !important;
-        }
-
-        #notion-back:hover {
-            background: rgba(55, 53, 47, 0.08) !important;
-        }
-
-        /* 移除 NGA 原有样式影响 */
-        #spacePage, #pacePage, #topic_rows, .post-row {
-            all: unset !important;
-        }
-    `;
-
-    // ==================== DOM 转换函数 ====================
-
-    // 转换帖子列表页面
-    function transformThreadList() {
-        const container = document.querySelector('#topic_rows, .threadlist, .post-list, .forum-list');
-
-        if (!container) return null;
-
-        const notionContainer = document.createElement('div');
-        notionContainer.id = 'notion-container';
-
-        // 标题
-        const title = document.createElement('h1');
-        title.className = 'notion-title';
-        title.textContent = document.title.replace(' - NGA玩家社区', '') || 'NGA 帖子列表';
-        notionContainer.appendChild(title);
-
-        // 遍历帖子
-        const threads = container.querySelectorAll('tr, .thread, .post, li');
-        threads.forEach(thread => {
-            const block = createThreadBlock(thread);
-            if (block) {
-                notionContainer.appendChild(block);
-            }
-        });
-
-        // 分页
-        const pagination = createPagination();
-        if (pagination) {
-            notionContainer.appendChild(pagination);
-        }
-
-        return notionContainer;
-    }
-
-    // 创建帖子块
-    function createThreadBlock(thread) {
-        const titleEl = thread.querySelector('a, .title, .subject');
-        const authorEl = thread.querySelector('.author, .username, .uid');
-        const timeEl = thread.querySelector('.time, .posttime');
-        const tagEl = thread.querySelector('.tag, .forum, .board');
-
-        if (!titleEl) return null;
-
-        const block = document.createElement('div');
-        block.className = 'notion-block';
-
-        const title = document.createElement('div');
-        title.className = 'notion-block-title';
-        title.innerHTML = `<a href="${titleEl.href || '#'}">${titleEl.textContent}</a>`;
-        block.appendChild(title);
-
-        if (tagEl) {
-            const tag = document.createElement('span');
-            tag.className = 'notion-block-tag';
-            tag.textContent = tagEl.textContent;
-            block.appendChild(tag);
-        }
-
-        const author = document.createElement('div');
-        author.className = 'notion-block-author';
-        author.textContent = authorEl ? authorEl.textContent : '匿名';
-        block.appendChild(author);
-
-        return block;
-    }
-
-    // 创建分页
-    function createPagination() {
-        const paginationEl = document.querySelector('.pages, .page, .pagination');
-        if (!paginationEl) return null;
-
-        const pagination = document.createElement('div');
-        pagination.className = 'notion-pagination';
-        pagination.innerHTML = paginationEl.innerHTML;
-
-        return pagination;
-    }
-
-    // 转换帖子内容页
-    function transformPostPage() {
-        const postContent = document.querySelector('.post, .post-content, .topic-content');
-
-        if (!postContent) return null;
-
-        const notionContainer = document.createElement('div');
-        notionContainer.id = 'notion-container';
-
-        // 返回按钮
-        const backBtn = document.createElement('div');
-        backBtn.id = 'notion-back';
-        backBtn.innerHTML = '← 返回列表';
-        backBtn.onclick = () => history.back();
-        notionContainer.appendChild(backBtn);
-
-        // 标题
-        const title = document.createElement('h1');
-        title.className = 'notion-title';
-        title.textContent = document.querySelector('h1, .title, .subject')?.textContent || '帖子详情';
-        notionContainer.appendChild(title);
-
-        // 内容
-        const content = document.createElement('div');
-        content.className = 'notion-post-content';
-        content.innerHTML = postContent.innerHTML;
-        notionContainer.appendChild(content);
-
-        return notionContainer;
-    }
 
     // ==================== 状态管理 ====================
     function saveState() {
@@ -353,6 +45,612 @@
         setTimeout(() => status.classList.remove('show'), 2000);
     }
 
+    // ==================== DOM 创建工具 ====================
+    function createDom(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.childNodes[0];
+    }
+
+    // ==================== 样式定义 ====================
+    const NOTION_STYLES = `
+        #notion-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: #ffffff !important;
+            z-index: 2147483647 !important;
+            overflow-y: auto !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol" !important;
+        }
+
+        #notion-overlay * {
+            box-sizing: border-box !important;
+        }
+
+        .notion-doc {
+            max-width: 900px !important;
+            margin: 0 auto !important;
+            padding: 64px 96px !important;
+        }
+
+        .notion-title {
+            font-size: 40px !important;
+            font-weight: 700 !important;
+            color: #37352f !important;
+            line-height: 1.2 !important;
+            margin-bottom: 4px !important;
+            outline: none !important;
+        }
+
+        .notion-meta {
+            font-size: 14px !important;
+            color: #787774 !important;
+            margin-bottom: 48px !important;
+        }
+
+        .notion-hr {
+            border: none !important;
+            border-top: 1px solid #e9e9e8 !important;
+            margin: 24px 0 !important;
+        }
+
+        .notion-item {
+            padding: 8px 0 !important;
+            border-bottom: 1px solid #f4f4f3 !important;
+            transition: background-color 0.1s ease !important;
+        }
+
+        .notion-item:hover {
+            background-color: #f7f7f5 !important;
+        }
+
+        .notion-item-title {
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            color: #37352f !important;
+            margin-bottom: 2px !important;
+        }
+
+        .notion-item-title a {
+            color: inherit !important;
+            text-decoration: none !important;
+        }
+
+        .notion-item-title a:hover {
+            color: #787774 !important;
+        }
+
+        .notion-item-meta {
+            font-size: 13px !important;
+            color: #9b9a97 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+
+        .notion-item-meta .tag {
+            background: #f4f4f3 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+            font-size: 12px !important;
+        }
+
+        .notion-item-meta .author::before {
+            content: "by" !important;
+            margin-right: 4px !important;
+            color: #9b9a97 !important;
+        }
+
+        .notion-back {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            padding: 6px 12px !important;
+            margin-bottom: 32px !important;
+            font-size: 14px !important;
+            color: #787774 !important;
+            cursor: pointer !important;
+            border-radius: 4px !important;
+            transition: background-color 0.1s ease !important;
+        }
+
+        .notion-back:hover {
+            background-color: #f7f7f5 !important;
+        }
+
+        .notion-comment {
+            padding: 16px 0 !important;
+            border-bottom: 1px solid #f4f4f3 !important;
+        }
+
+        .notion-comment:first-child {
+            border-top: 1px solid #e9e9e8 !important;
+            margin-top: 24px !important;
+            padding-top: 24px !important;
+        }
+
+        .notion-comment-header {
+            font-size: 13px !important;
+            color: #9b9a97 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .notion-comment-content {
+            font-size: 16px !important;
+            line-height: 1.6 !important;
+            color: #37352f !important;
+        }
+
+        .notion-comment-content p {
+            margin: 0 0 12px 0 !important;
+        }
+
+        .notion-comment-content p:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        .notion-comment-content img {
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 4px !important;
+            margin: 8px 0 !important;
+            display: block !important;
+        }
+
+        .notion-comment-content h3 {
+            font-size: 1.125em !important;
+            font-weight: 600 !important;
+            margin: 0 0 8px 0 !important;
+            color: #37352f !important;
+        }
+
+        .notion-comment-content blockquote {
+            border-left: 3px solid #e9e9e8 !important;
+            margin: 0 0 12px 0 !important;
+            padding-left: 16px !important;
+            color: #787774 !important;
+            font-style: italic !important;
+        }
+
+        .notion-quote {
+            border-left: 3px solid #e9e9e8 !important;
+            background: #f9f9f8 !important;
+            padding: 12px 16px !important;
+            margin: 12px 0 !important;
+            color: #787774 !important;
+            font-size: 14px !important;
+            border-radius: 0 4px 4px 0 !important;
+        }
+
+        .notion-comment-content a {
+            color: #37352f !important;
+            text-decoration: underline !important;
+        }
+
+        .notion-comment-content a:hover {
+            color: #787774 !important;
+        }
+
+        .notion-comment-content .ubbcode {
+            all: unset !important;
+        }
+
+        .notion-comment-content .goodbad {
+            display: none !important;
+        }
+
+        .notion-comment-content .postBtnPos,
+        .notion-comment-content .postInfo,
+        .notion-comment-content .posterinfo {
+            display: none !important;
+        }
+
+        .notion-comment-content [style*="display:none"] {
+            display: none !important;
+        }
+
+        #notion-status {
+            position: fixed !important;
+            top: 16px !important;
+            right: 16px !important;
+            padding: 8px 16px !important;
+            background: #37352f !important;
+            color: #ffffff !important;
+            font-size: 13px !important;
+            border-radius: 4px !important;
+            opacity: 0 !important;
+            transition: opacity 0.3s ease !important;
+            z-index: 2147483647 !important;
+            pointer-events: none !important;
+        }
+
+        #notion-status.show {
+            opacity: 1 !important;
+        }
+
+        .notion-pagination {
+            display: none !important;
+        }
+
+        .notion-pagination-fixed {
+            position: fixed !important;
+            right: 24px !important;
+            bottom: 50% !important;
+            transform: translateY(50%) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+            z-index: 2147483647 !important;
+            background: #ffffff !important;
+            padding: 8px 12px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+        }
+
+        .notion-pagination-fixed a,
+        .notion-pagination-fixed span {
+            padding: 6px 12px !important;
+            border-radius: 4px !important;
+            font-size: 13px !important;
+            color: #37352f !important;
+            text-decoration: none !important;
+            background: transparent !important;
+            cursor: pointer !important;
+            transition: background-color 0.1s ease !important;
+            text-align: center !important;
+        }
+
+        .notion-pagination-fixed a:hover {
+            background: #f7f7f5 !important;
+        }
+
+        .notion-pagination-fixed .current {
+            background: #37352f !important;
+            color: #ffffff !important;
+            font-weight: 500 !important;
+        }
+
+        .notion-pagination-fixed .prev,
+        .notion-pagination-fixed .next {
+            font-size: 12px !important;
+            color: #9b9a97 !important;
+        }
+
+        .notion-page-info {
+            text-align: center !important;
+            font-size: 13px !important;
+            color: #9b9a97 !important;
+            margin-top: 16px !important;
+        }
+    `;
+
+    // ==================== 帖子列表页处理 ====================
+    function transformThreadList() {
+        const root = createDom('<div id="notion-overlay"></div>');
+        const doc = createDom('<div class="notion-doc"></div>');
+        root.appendChild(doc);
+
+        // 板块名称
+        const boardEl = document.querySelector('.nav_link:last-of-type, .nav a:last-of-type');
+        const boardName = boardEl?.textContent?.trim() || 'NGA';
+
+        // 标题
+        const title = createDom('<h1 class="notion-title" contenteditable="false"></h1>');
+        const pageTitle = document.querySelector('title')?.textContent?.replace(/ NGA.*$/, '') || boardName;
+        title.textContent = pageTitle;
+        doc.appendChild(title);
+
+        // 副标题
+        const meta = createDom('<div class="notion-meta"></div>');
+        meta.textContent = boardName + ' · ' + document.querySelectorAll('tr.topicrow').length + ' 条帖子';
+        doc.appendChild(meta);
+
+        // 帖子列表
+        const rows = document.querySelectorAll('tr.topicrow');
+        if (rows.length === 0) {
+            doc.appendChild(createDom('<div class="notion-item">暂无帖子</div>'));
+            document.body.appendChild(root);
+            return root;
+        }
+
+        rows.forEach((row) => {
+            const item = createThreadItem(row);
+            if (item) doc.appendChild(item);
+        });
+
+        document.body.appendChild(root);
+        return root;
+    }
+
+    function createThreadItem(row) {
+        const titleEl = row.querySelector('td.c2 a.topic');
+        if (!titleEl) return null;
+
+        const item = createDom('<div class="notion-item"></div>');
+
+        // 标题
+        const title = createDom('<div class="notion-item-title"></div>');
+        const link = createDom(`<a href="${titleEl.href || '#'}"></a>`);
+        link.textContent = titleEl.textContent?.trim() || '';
+        title.appendChild(link);
+        item.appendChild(title);
+
+        // 元信息
+        const meta = createDom('<div class="notion-item-meta"></div>');
+
+        // 板块标签
+        const tagEl = row.querySelector('td.c2 .titleadd2 a');
+        if (tagEl) {
+            const tag = createDom('<span class="tag"></span>');
+            tag.textContent = tagEl.textContent?.trim() || '';
+            meta.appendChild(tag);
+        }
+
+        // 作者
+        const authorEl = row.querySelector('td.c3 a.author');
+        if (authorEl) {
+            const author = createDom('<span class="author"></span>');
+            author.textContent = authorEl.textContent?.trim() || '';
+            meta.appendChild(author);
+        }
+
+        // 时间
+        const timeEl = row.querySelector('td.c3 .postdate');
+        if (timeEl) {
+            const time = createDom('<span class="time"></span>');
+            time.textContent = timeEl.textContent?.trim() || '';
+            meta.appendChild(time);
+        }
+
+        item.appendChild(meta);
+        return item;
+    }
+
+    // ==================== 帖子详情页处理 ====================
+    function transformPostPage() {
+        const root = createDom('<div id="notion-overlay"></div>');
+        const doc = createDom('<div class="notion-doc"></div>');
+        root.appendChild(doc);
+
+        // 返回按钮 - 返回板块列表
+        const backBtn = createDom('<div class="notion-back">← 返回列表</div>');
+        backBtn.onclick = () => {
+            // 获取 fid 参数跳转到列表页
+            const fidMatch = location.search.match(/[?&]fid=(-?\d+)/);
+            if (fidMatch) {
+                location.href = `/thread.php?fid=${fidMatch[1]}`;
+            } else {
+                location.href = '/';
+            }
+        };
+        doc.appendChild(backBtn);
+
+        // 获取当前页码和帖子行
+        const currentPage = getCurrentPage();
+        const postRows = document.querySelectorAll('[id^="post1strow"], [class*="postrow"]');
+
+        postRows.forEach((row) => {
+            const comment = createPostComment(row);
+            if (comment) doc.appendChild(comment);
+        });
+
+        // 添加翻页控件（固定在右侧悬浮）
+        const pagination = createPagination(currentPage);
+        if (pagination) {
+            root.appendChild(pagination);
+        }
+
+        // 页码信息（显示在底部）
+        const pageInfo = createDom('<div class="notion-page-info"></div>');
+        const tid = getTidFromUrl();
+        pageInfo.textContent = `帖子 ID: ${tid} · 第 ${currentPage} 页`;
+        doc.appendChild(pageInfo);
+
+        document.body.appendChild(root);
+        return root;
+    }
+
+    function getCurrentPage() {
+        const match = location.search.match(/[?&]page=(\d+)/);
+        return match ? parseInt(match[1]) : 1;
+    }
+
+    function getTidFromUrl() {
+        const match = location.search.match(/[?&]tid=(\d+)/);
+        return match ? match[1] : '';
+    }
+
+    function createPagination(currentPage) {
+        // 查找所有分页链接
+        const pageLinks = [];
+        document.querySelectorAll('a[href*="page="]').forEach((a) => {
+            const match = a.href.match(/[?&]page=(\d+)/);
+            if (match) {
+                const page = parseInt(match[1]);
+                if (!pageLinks.includes(page)) {
+                    pageLinks.push(page);
+                }
+            }
+        });
+
+        if (pageLinks.length === 0) return null;
+
+        pageLinks.sort((a, b) => a - b);
+        const maxPage = Math.max(...pageLinks, currentPage);
+
+        // 创建固定在右侧的翻页器
+        const pagination = createDom('<div class="notion-pagination-fixed"></div>');
+
+        // 显示前后几页的数字
+        const pageRange = 3; // 显示前后各3页
+        const startPage = Math.max(1, currentPage - pageRange);
+        const endPage = Math.min(maxPage, currentPage + pageRange);
+
+        // 上一页
+        if (currentPage > 1) {
+            const prevLink = createDom(`<a class="prev">↑</a>`);
+            prevLink.title = '上一页';
+            prevLink.onclick = () => goToPage(currentPage - 1);
+            pagination.appendChild(prevLink);
+        }
+
+        // 页码数字
+        for (let page = startPage; page <= endPage; page++) {
+            if (page === currentPage) {
+                const span = createDom(`<span class="current">${page}</span>`);
+                pagination.appendChild(span);
+            } else {
+                const link = createDom(`<a>${page}</a>`);
+                link.onclick = () => goToPage(page);
+                pagination.appendChild(link);
+            }
+        }
+
+        // 下一页
+        if (currentPage < maxPage) {
+            const nextLink = createDom(`<a class="next">↓</a>`);
+            nextLink.title = '下一页';
+            nextLink.onclick = () => goToPage(currentPage + 1);
+            pagination.appendChild(nextLink);
+        }
+
+        return pagination;
+    }
+
+    function goToPage(page) {
+        const url = new URL(location.href);
+        url.searchParams.set('page', page.toString());
+        location.href = url.toString();
+    }
+
+    function createPostComment(row) {
+        // 获取作者
+        const authorEl = row.querySelector('[id*="postauthor"], a.userlink');
+        const authorName = authorEl?.innerText?.trim() || '匿名';
+
+        // 获取点赞点踩数
+        const recommendEl = row.querySelector('.recommendvalue');
+        const recommendCount = recommendEl?.textContent?.trim() || '';
+
+        // 获取内容容器
+        const contentContainer = row.querySelector('[id*="postcontent"]');
+        if (!contentContainer) return null;
+
+        const comment = createDom('<div class="notion-comment"></div>');
+
+        // 头部：作者 + 点赞数
+        const header = createDom('<div class="notion-comment-header"></div>');
+        let headerText = authorName;
+        if (recommendCount) {
+            headerText += ` · <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;margin-bottom:2px"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${recommendCount}`;
+        }
+        header.innerHTML = headerText;
+        comment.appendChild(header);
+
+        // 内容区域
+        const content = createDom('<div class="notion-comment-content"></div>');
+
+        // 提取标题
+        const subjectEl = row.querySelector('[id*="postsubject"]');
+        if (subjectEl && subjectEl.textContent?.trim()) {
+            const subject = createDom('<h3></h3>');
+            subject.textContent = subjectEl.textContent?.trim();
+            content.appendChild(subject);
+        }
+
+        // 提取内容：支持文本和图片
+        extractContent(content, contentContainer);
+
+        comment.appendChild(content);
+        return comment;
+    }
+
+    function extractContent(container, sourceEl) {
+        let currentPara = null;
+
+        // 递归处理所有子节点
+        function processNode(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                // 文本节点
+                const text = node.textContent?.trim();
+                if (text) {
+                    if (!currentPara) {
+                        currentPara = createDom('<p></p>');
+                        container.appendChild(currentPara);
+                    }
+                    if (currentPara.firstChild) {
+                        currentPara.textContent += ' ' + text;
+                    } else {
+                        currentPara.textContent = text;
+                    }
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName?.toLowerCase();
+
+                if (node.classList?.contains('quote')) {
+                    // 引用 - 用特殊样式显示
+                    currentPara = null;
+                    const quoteDiv = createDom('<div class="notion-quote"></div>');
+                    quoteDiv.textContent = '引用: ' + node.textContent?.trim() || '';
+                    container.appendChild(quoteDiv);
+                } else if (tagName === 'img') {
+                    // 图片 - 获取 src
+                    currentPara = null;
+                    const img = createDom('<img>');
+                    img.src = getImgSrc(node);
+                    img.alt = node.alt || '';
+                    img.title = node.title || '';
+                    container.appendChild(img);
+                } else if (tagName === 'br') {
+                    // 换行
+                    currentPara = null;
+                } else if (tagName === 'p' || tagName === 'div') {
+                    // 段落或 div，递归处理
+                    currentPara = null;
+                    node.childNodes.forEach(processNode);
+                } else if (tagName === 'a') {
+                    // 链接
+                    const link = createDom('<a></a>');
+                    link.href = node.href || '#';
+                    link.textContent = node.textContent?.trim() || node.innerText?.trim() || '';
+                    if (!currentPara) {
+                        currentPara = createDom('<p></p>');
+                        container.appendChild(currentPara);
+                    }
+                    currentPara.appendChild(link);
+                } else {
+                    // 其他元素，递归处理子节点
+                    node.childNodes?.forEach(processNode);
+                }
+            }
+        }
+
+        // 处理所有子节点
+        sourceEl.childNodes.forEach(processNode);
+
+        // 清理空段落
+        const paras = container.querySelectorAll('p');
+        paras.forEach((p) => {
+            if (!p.textContent?.trim()) {
+                p.remove();
+            }
+        });
+    }
+
+    function getImgSrc(imgEl) {
+        // 尝试多种方式获取图片 src
+        return imgEl.src ||
+               imgEl.dataset?.src ||
+               imgEl.dataset?.lazySrc ||
+               imgEl.getAttribute('data-src') ||
+               imgEl.getAttribute('data-lazy-src') ||
+               imgEl.getAttribute('data-original') ||
+               '';
+    }
+
     // ==================== 切换功能 ====================
     function toggleMode() {
         CONFIG.enabled = !CONFIG.enabled;
@@ -362,37 +660,37 @@
     }
 
     function applyMode() {
-        // 移除旧样式
-        const oldStyle = document.getElementById('notion-custom-style');
+        // 移除旧内容
+        const oldOverlay = document.getElementById('notion-overlay');
+        if (oldOverlay) oldOverlay.remove();
+
+        const oldStyle = document.getElementById('notion-style');
         if (oldStyle) oldStyle.remove();
 
-        // 移除旧容器
-        const oldContainer = document.getElementById('notion-container');
-        if (oldContainer) oldContainer.remove();
+        // 显示原站内容
+        const mmc = document.getElementById('mmc');
+        if (mmc) mmc.style.display = '';
 
         if (!CONFIG.enabled) return;
 
+        // 隐藏原站
+        if (mmc) mmc.style.display = 'none';
+
         // 注入样式
         const style = document.createElement('style');
-        style.id = 'notion-custom-style';
+        style.id = 'notion-style';
         style.textContent = NOTION_STYLES;
         document.head.appendChild(style);
 
-        // 转换页面
-        let container;
-        if (window.location.pathname.includes('read.php') || document.querySelector('.post, .post-content')) {
-            container = transformPostPage();
-        } else {
-            container = transformThreadList();
-        }
+        // 根据页面类型生成
+        const pathname = window.location.pathname;
+        const hasPostRows = document.querySelectorAll('[id^="post1strow"], [class*="postrow"]').length > 0;
+        const isPostPage = pathname.includes('read.php') || hasPostRows;
 
-        if (container) {
-            // 隐藏原站内容
-            document.body.style.visibility = 'hidden';
-            document.body.appendChild(container);
-            setTimeout(() => {
-                document.body.style.visibility = 'visible';
-            }, 100);
+        if (isPostPage) {
+            transformPostPage();
+        } else {
+            transformThreadList();
         }
     }
 
@@ -400,28 +698,32 @@
     function init() {
         loadState();
 
-        // 注册菜单命令
         GM_registerMenuCommand('切换摸鱼模式', toggleMode);
 
-        // 快捷键: Ctrl/Cmd + Shift + N (跨平台)
         document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
+            if (e.key.toLowerCase() === 'q') {
+                if (/textarea|input/i.test(e.target.tagName)) return;
                 e.preventDefault();
                 toggleMode();
             }
         });
 
-        // 页面加载完成后应用状态
         if (CONFIG.enabled) {
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', applyMode);
             } else {
-                applyMode();
+                setTimeout(applyMode, 100);
             }
         }
 
-        console.log('NGA Notion 摸鱼模式已加载 v' + CONFIG.styleVersion);
+        console.log('NGA Notion 摸鱼模式 v' + CONFIG.styleVersion);
     }
 
-    init();
+    if (window.location.pathname === '/'
+        || window.location.pathname === '/thread.php'
+        || window.location.pathname === '/read.php'
+        || window.location.pathname.includes('thread.php')
+        || window.location.pathname.includes('read.php')) {
+        init();
+    }
 })();
