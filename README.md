@@ -1,12 +1,39 @@
 # NGA 摸鱼插件 - Notion 风格伪装
 
-将 NGA（ngabbs.com）伪装成 Notion 风格的文档界面，方便摸鱼。
+将 NGA（ngabbs.com）伪装成 Notion 风格的文档界面，方便摸鱼看游戏攻略和帖子。
 
 ## 功能特性
 
 - **Notion 风格伪装**：将 NGA 页面转换为简洁的文档样式
-- **一键切换**：点击扩展图标或使用快捷键快速切换摸鱼模式
+- **一键切换**：使用快捷键 `Q` 快速切换摸鱼模式
+- **完整浏览体验**：支持首页、板块列表、文章详情三级页面
 - **无损体验**：保留所有帖子内容，只改变视觉样式
+
+## 支持的游戏板块
+
+### Moba / MOBA
+- 英雄联盟、英雄联盟手游、云顶之弈
+- DOTA2、刀塔霸业
+- 无畏契约
+
+### 暴雪游戏
+- 魔兽世界、炉石传说、守望先锋
+- 暗黑破坏神、星际争霸、风暴英雄
+
+### 主机游戏
+- 艾尔登法环、塞尔达传说、动物森友会
+- 黑神话:悟空、博德之门、怪物猎人
+- PlayStation、XBOX、Nintendo
+
+### 手游
+- 原神、明日方舟、崩坏:星穹铁道
+- 王者荣耀、碧蓝航线、阴阳师
+- 绝区零、鸣潮、少女前线
+
+### 更多板块
+- 二次元、游戏王、东方Project
+- Vtuber、GalGame、Fate
+- Steam Deck、PS5、Xbox Series
 
 ## 快速开始
 
@@ -19,21 +46,21 @@
 
 ### 使用
 
-1. 访问 https://ngabbs.com/
-2. 点击浏览器地址栏右侧的 Tampermonkey 图标
-3. 启用 "NGA Notion 模式"
-4. 页面将转换为 Notion 风格的文档样式
+1. 访问 https://bbs.nga.cn/
+2. 按 `Q` 键切换摸鱼模式
+3. 页面将转换为 Notion 风格的文档样式
 
 ## 项目结构
 
 ```
 nga-extension/
 ├── README.md                 # 项目说明
+├── CLAUDE.md                 # AI 开发指南
+├── TODO.md                   # 开发计划
 ├── src/
 │   └── nga-notion.user.js    # 主脚本文件
-├── docs/
-│   └── ...                   # 文档和设计文件
-└── .gitignore
+└── docs/
+    └── ...                   # 文档和参考资料
 ```
 
 ## 开发
@@ -46,12 +73,13 @@ nga-extension/
 
 ### 快捷键
 
-- `Ctrl/Cmd + Shift + N`：切换摸鱼模式（跨平台）
+- `Q`：切换摸鱼模式
 
 ## 兼容性
 
 - Chrome + Tampermonkey
 - Edge + Tampermonkey
+- Safari + Tampermonkey
 - Firefox + Tampermonkey
 
 ## License

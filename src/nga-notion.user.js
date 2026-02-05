@@ -325,6 +325,61 @@
             color: #9b9a97 !important;
             margin-top: 16px !important;
         }
+
+        .notion-breadcrumb {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+            gap: 4px !important;
+            margin-bottom: 16px !important;
+            font-size: 14px !important;
+        }
+
+        .notion-breadcrumb a {
+            color: #787774 !important;
+            text-decoration: none !important;
+            transition: color 0.1s ease !important;
+        }
+
+        .notion-breadcrumb a:hover {
+            color: #37352f !important;
+        }
+
+        .breadcrumb-sep {
+            color: #9b9a97 !important;
+        }
+
+        .notion-group-title {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: #37352f !important;
+            margin: 32px 0 12px 0 !important;
+            padding-bottom: 8px !important;
+            border-bottom: 1px solid #e9e9e8 !important;
+        }
+
+        .notion-forum-group {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            margin-bottom: 24px !important;
+        }
+
+        .notion-forum-item {
+            display: inline-block !important;
+            padding: 6px 12px !important;
+            background: #f7f7f5 !important;
+            border-radius: 4px !important;
+            font-size: 14px !important;
+            color: #37352f !important;
+            text-decoration: none !important;
+            transition: background-color 0.1s ease !important;
+        }
+
+        .notion-forum-item:hover {
+            background: #f0f0ee !important;
+            color: #37352f !important;
+        }
     `;
 
     // ==================== 帖子列表页处理 ====================
@@ -332,6 +387,24 @@
         const root = createDom('<div id="notion-overlay"></div>');
         const doc = createDom('<div class="notion-doc"></div>');
         root.appendChild(doc);
+
+        // 板块导航 - 首页 + 只取第一个 nav
+        const breadcrumb = createDom('<div class="notion-breadcrumb"></div>');
+
+        // 首页链接
+        const homeLink = createDom('<a href="/">首页</a>');
+        breadcrumb.appendChild(homeLink);
+
+        const firstNav = document.querySelector('.nav');
+        const navLinks = firstNav?.querySelectorAll('a.nav_link') || [];
+        navLinks.forEach((link) => {
+            const separator = createDom('<span class="breadcrumb-sep">/</span>');
+            breadcrumb.appendChild(separator);
+            const a = createDom(`<a href="${link.href}"></a>`);
+            a.textContent = link.textContent?.trim() || '';
+            breadcrumb.appendChild(a);
+        });
+        doc.appendChild(breadcrumb);
 
         // 板块名称
         const boardEl = document.querySelector('.nav_link:last-of-type, .nav a:last-of-type');
@@ -343,13 +416,13 @@
         title.textContent = pageTitle;
         doc.appendChild(title);
 
-        // 副标题
-        const meta = createDom('<div class="notion-meta"></div>');
-        meta.textContent = boardName + ' · ' + document.querySelectorAll('tr.topicrow').length + ' 条帖子';
-        doc.appendChild(meta);
+        // 查找帖子列表 - NGA 使用 table.forumbox
+        const forumTable = document.querySelector('table.forumbox');
+        let rows = [];
+        if (forumTable) {
+            rows = Array.from(forumTable.rows).slice(1);
+        }
 
-        // 帖子列表
-        const rows = document.querySelectorAll('tr.topicrow');
         if (rows.length === 0) {
             doc.appendChild(createDom('<div class="notion-item">暂无帖子</div>'));
             document.body.appendChild(root);
@@ -361,17 +434,99 @@
             if (item) doc.appendChild(item);
         });
 
+        // 添加分页功能
+        const currentPage = getListCurrentPage();
+        const pagination = createListPagination(currentPage);
+        if (pagination) {
+            root.appendChild(pagination);
+        }
+
+        // 页码信息
+        const pageInfo = createDom('<div class="notion-page-info"></div>');
+        pageInfo.textContent = `第 ${currentPage} 页`;
+        doc.appendChild(pageInfo);
+
         document.body.appendChild(root);
         return root;
     }
 
+    // 列表页分页功能
+    function getListCurrentPage() {
+        const match = location.search.match(/[?&]page=(\d+)/);
+        return match ? parseInt(match[1]) : 1;
+    }
+
+    function createListPagination(currentPage) {
+        // 查找所有分页链接
+        const pageLinks = [];
+        document.querySelectorAll('a[href*="page="]').forEach((a) => {
+            const match = a.href.match(/[?&]page=(\d+)/);
+            if (match) {
+                const page = parseInt(match[1]);
+                if (!pageLinks.includes(page)) {
+                    pageLinks.push(page);
+                }
+            }
+        });
+
+        if (pageLinks.length === 0) return null;
+
+        pageLinks.sort((a, b) => a - b);
+        const maxPage = Math.max(...pageLinks, currentPage);
+
+        // 创建固定在右侧的翻页器
+        const pagination = createDom('<div class="notion-pagination-fixed"></div>');
+
+        // 显示前后几页的数字
+        const pageRange = 3;
+        const startPage = Math.max(1, currentPage - pageRange);
+        const endPage = Math.min(maxPage, currentPage + pageRange);
+
+        // 上一页
+        if (currentPage > 1) {
+            const prevLink = createDom(`<a class="prev">←</a>`);
+            prevLink.title = '上一页';
+            prevLink.onclick = () => goToListPage(currentPage - 1);
+            pagination.appendChild(prevLink);
+        }
+
+        // 页码数字
+        for (let page = startPage; page <= endPage; page++) {
+            if (page === currentPage) {
+                const span = createDom(`<span class="current">${page}</span>`);
+                pagination.appendChild(span);
+            } else {
+                const link = createDom(`<a>${page}</a>`);
+                link.onclick = () => goToListPage(page);
+                pagination.appendChild(link);
+            }
+        }
+
+        // 下一页
+        if (currentPage < maxPage) {
+            const nextLink = createDom(`<a class="next">→</a>`);
+            nextLink.title = '下一页';
+            nextLink.onclick = () => goToListPage(currentPage + 1);
+            pagination.appendChild(nextLink);
+        }
+
+        return pagination;
+    }
+
+    function goToListPage(page) {
+        const url = new URL(location.href);
+        url.searchParams.set('page', page.toString());
+        location.href = url.toString();
+    }
+
     function createThreadItem(row) {
+        // 获取标题链接 - td.c2 里的 a.topic
         const titleEl = row.querySelector('td.c2 a.topic');
         if (!titleEl) return null;
 
         const item = createDom('<div class="notion-item"></div>');
 
-        // 标题
+        // 标题 - 需要提取完整标题（包含标签）
         const title = createDom('<div class="notion-item-title"></div>');
         const link = createDom(`<a href="${titleEl.href || '#'}"></a>`);
         link.textContent = titleEl.textContent?.trim() || '';
@@ -381,15 +536,15 @@
         // 元信息
         const meta = createDom('<div class="notion-item-meta"></div>');
 
-        // 板块标签
-        const tagEl = row.querySelector('td.c2 .titleadd2 a');
+        // 板块标签 - td.c2 里的颜色标签 span[class^="t_k_"]
+        const tagEl = row.querySelector('td.c2 span[class^="t_k_"]');
         if (tagEl) {
             const tag = createDom('<span class="tag"></span>');
             tag.textContent = tagEl.textContent?.trim() || '';
             meta.appendChild(tag);
         }
 
-        // 作者
+        // 作者 - td.c3 里的 a.author
         const authorEl = row.querySelector('td.c3 a.author');
         if (authorEl) {
             const author = createDom('<span class="author"></span>');
@@ -397,8 +552,8 @@
             meta.appendChild(author);
         }
 
-        // 时间
-        const timeEl = row.querySelector('td.c3 .postdate');
+        // 时间 - td.c3 里的 span.postdate
+        const timeEl = row.querySelector('td.c3 span.postdate');
         if (timeEl) {
             const time = createDom('<span class="time"></span>');
             time.textContent = timeEl.textContent?.trim() || '';
@@ -415,18 +570,25 @@
         const doc = createDom('<div class="notion-doc"></div>');
         root.appendChild(doc);
 
-        // 返回按钮 - 返回板块列表
-        const backBtn = createDom('<div class="notion-back">← 返回列表</div>');
-        backBtn.onclick = () => {
-            // 获取 fid 参数跳转到列表页
-            const fidMatch = location.search.match(/[?&]fid=(-?\d+)/);
-            if (fidMatch) {
-                location.href = `/thread.php?fid=${fidMatch[1]}`;
-            } else {
-                location.href = '/';
-            }
-        };
-        doc.appendChild(backBtn);
+        // 板块导航 - 首页 + 只取第一个 nav，移除最后一个（文章标题）
+        const breadcrumb = createDom('<div class="notion-breadcrumb"></div>');
+
+        // 首页链接
+        const homeLink = createDom('<a href="/">首页</a>');
+        breadcrumb.appendChild(homeLink);
+
+        const firstNav = document.querySelector('.nav');
+        const navLinks = firstNav?.querySelectorAll('a.nav_link') || [];
+        // 移除最后一个（文章标题）
+        const boardLinks = Array.from(navLinks).slice(0, -1);
+        boardLinks.forEach((link, index) => {
+            const separator = createDom('<span class="breadcrumb-sep">/</span>');
+            breadcrumb.appendChild(separator);
+            const a = createDom(`<a href="${link.href}"></a>`);
+            a.textContent = link.textContent?.trim() || '';
+            breadcrumb.appendChild(a);
+        });
+        doc.appendChild(breadcrumb);
 
         // 获取当前页码和帖子行
         const currentPage = getCurrentPage();
@@ -571,6 +733,16 @@
     function extractContent(container, sourceEl) {
         let currentPara = null;
 
+        // 需要跳过的元素
+        const skipSelectors = [
+            '.recommendvalue',
+            '.postBtnPos',
+            '.postInfo',
+            '.posterinfo',
+            '[class*="goodbad"]',
+            '[style*="display:none"]'
+        ];
+
         // 递归处理所有子节点
         function processNode(node) {
             if (node.nodeType === Node.TEXT_NODE) {
@@ -588,6 +760,11 @@
                     }
                 }
             } else if (node.nodeType === Node.ELEMENT_NODE) {
+                // 检查是否需要跳过
+                if (node.matches && skipSelectors.some(sel => node.matches(sel))) {
+                    return;
+                }
+
                 const tagName = node.tagName?.toLowerCase();
 
                 if (node.classList?.contains('quote')) {
@@ -682,16 +859,64 @@
         style.textContent = NOTION_STYLES;
         document.head.appendChild(style);
 
-        // 根据页面类型生成
+        // 判断页面类型 - 使用更精确的匹配
         const pathname = window.location.pathname;
-        const hasPostRows = document.querySelectorAll('[id^="post1strow"], [class*="postrow"]').length > 0;
-        const isPostPage = pathname.includes('read.php') || hasPostRows;
+        const isPostPage = pathname === '/read.php' || pathname.startsWith('/read.php?');
+        const hasForumbox = document.querySelector('table.forumbox') !== null;
 
         if (isPostPage) {
             transformPostPage();
-        } else {
+        } else if (hasForumbox) {
             transformThreadList();
+        } else {
+            transformHomepage();
         }
+    }
+
+    // ==================== 板块首页处理 ====================
+    function transformHomepage() {
+        const root = createDom('<div id="notion-overlay"></div>');
+        const doc = createDom('<div class="notion-doc"></div>');
+        root.appendChild(doc);
+
+        // 标题
+        const title = createDom('<h1 class="notion-title" contenteditable="false">NGA 游戏论坛</h1>');
+        doc.appendChild(title);
+
+        // 遍历所有板块容器
+        const forumContainers = document.querySelectorAll('.catenew');
+
+        forumContainers.forEach((container) => {
+            // 获取分类标题（在容器内）
+            const titleEl = container.querySelector(':scope > .catetitle, :scope > h2.catetitle');
+            const groupName = titleEl?.textContent?.trim()?.replace(/::/g, '').trim() || '';
+
+            // 获取板块链接
+            const forumLinks = container.querySelectorAll('a[href*="fid="]');
+            if (forumLinks.length === 0) return;
+
+            // 添加分组标题
+            if (groupName) {
+                const groupTitle = createDom('<div class="notion-group-title"></div>');
+                groupTitle.textContent = groupName;
+                doc.appendChild(groupTitle);
+            }
+
+            // 添加板块列表
+            const group = createDom('<div class="notion-forum-group"></div>');
+            forumLinks.forEach((link) => {
+                const fidMatch = link.href.match(/fid=(-?\d+)/);
+                if (!fidMatch) return;
+
+                const forumItem = createDom('<a class="notion-forum-item"></a>');
+                forumItem.href = link.href;
+                forumItem.textContent = link.textContent?.trim() || '';
+                group.appendChild(forumItem);
+            });
+            doc.appendChild(group);
+        });
+
+        document.body.appendChild(root);
     }
 
     // ==================== 初始化 ====================
@@ -708,12 +933,49 @@
             }
         });
 
-        if (CONFIG.enabled) {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', applyMode);
+        if (!CONFIG.enabled) {
+            console.log('NGA Notion 摸鱼模式 v' + CONFIG.styleVersion);
+            return;
+        }
+
+        // 注入样式
+        const style = document.createElement('style');
+        style.id = 'notion-style';
+        style.textContent = NOTION_STYLES;
+        document.head.appendChild(style);
+
+        // 根据页面类型等待不同元素
+        const pathname = window.location.pathname;
+        const isPostPage = pathname === '/read.php' || pathname.startsWith('/read.php?');
+        const isThreadPage = pathname === '/thread.php' || pathname.startsWith('/thread.php?');
+        const isHomePage = pathname === '/';
+
+        let waitSelector = '';
+        if (isPostPage) {
+            waitSelector = '[id^="post1strow"], [class*="postrow"]';
+        } else if (isThreadPage) {
+            waitSelector = 'table.forumbox';
+        } else if (isHomePage) {
+            waitSelector = '.catenew';
+        }
+
+        // 等待原站内容加载完成后应用模式
+        function waitAndApply() {
+            if (document.querySelector(waitSelector)) {
+                applyMode();
             } else {
-                setTimeout(applyMode, 100);
+                setTimeout(waitAndApply, 50);
             }
+        }
+
+        // 立即隐藏原站
+        const mmc = document.getElementById('mmc');
+        if (mmc) mmc.style.display = 'none';
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', waitAndApply);
+        } else {
+            waitAndApply();
         }
 
         console.log('NGA Notion 摸鱼模式 v' + CONFIG.styleVersion);
