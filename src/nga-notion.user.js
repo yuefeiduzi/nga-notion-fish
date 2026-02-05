@@ -1,8 +1,9 @@
 // ==UserScript==
-// @name         NGA Notion 摸鱼模式
+// @name         NGA 摸鱼模式
 // @namespace    https://ngabbs.com/
-// @version      2.0.0
-// @description  将 NGA 伪装成 Notion 风格的文档界面，方便摸鱼
+// @version      0.2
+// @description  将 NGA 转换为简洁的阅读界面，方便摸鱼浏览
+// @license      MIT
 // @author       Ross
 // @match        https://ngabbs.com/*
 // @match        https://*.ngabbs.com/*
@@ -820,12 +821,12 @@
     function getImgSrc(imgEl) {
         // 尝试多种方式获取图片 src
         return imgEl.src ||
-               imgEl.dataset?.src ||
-               imgEl.dataset?.lazySrc ||
-               imgEl.getAttribute('data-src') ||
-               imgEl.getAttribute('data-lazy-src') ||
-               imgEl.getAttribute('data-original') ||
-               '';
+            imgEl.dataset?.src ||
+            imgEl.dataset?.lazySrc ||
+            imgEl.getAttribute('data-src') ||
+            imgEl.getAttribute('data-lazy-src') ||
+            imgEl.getAttribute('data-original') ||
+            '';
     }
 
     // ==================== 切换功能 ====================
