@@ -23,6 +23,7 @@ python3 dev/server.py 8765
 | `fixtures/thread.html` | 按真实 read.php 仿写：`#m_posts > #m_posts_c > table.forumbox.postbox > tr.row1`，`td.c1 .posterInfoLine .author`，`td.c2 #postsubject{N}` / `#postcontent{N}` / `#postdate{N}` / `.stat > .recommendvalue`；含引用、嵌套引用、表格、代码块、折叠块、表情、懒加载图片、签名、贴条 |
 | `fixtures/board.html` | 按真实 thread.php 仿写：`#topicrows > table.forumbox > tr.row1/.row2 > td.c1~c4`，`a.topic`、`span[class^=t_k_]`、`a.author`、`span.silver.postdate` |
 | `fixtures/home.html` | `.catenew > .catetitle` + `a[href*=fid=]` |
+| `fixtures/blocked.html` | 模仿 NGA 拒绝访客的 `(ERROR:15)` 页面，用 `?blocked=1` 触发，用来验证兜底界面与「复制诊断」 |
 
 两个页面底部都会伪造 NGA 自己挂在 window 上的数据
 （`commonui.postArg` / `commonui.topicArg` / `__PAGE`），用来验证「优先读站点数据」这条路径。
@@ -31,6 +32,7 @@ python3 dev/server.py 8765
 ```
 http://127.0.0.1:8765/read.php?tid=1234567&nopostarg=1
 http://127.0.0.1:8765/thread.php?fid=-7&nopostarg=1
+http://127.0.0.1:8765/read.php?tid=1234567&blocked=1   # 未登录/权限不足的兜底页
 ```
 
 改 fixtures 的规矩：只加**真实存在**的类名/层级（出处见 `nga-dom-notes.md`），

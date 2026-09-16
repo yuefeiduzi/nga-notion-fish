@@ -33,6 +33,7 @@ extension/
   src/app.js             控制器：路由、取页、渲染调度、快捷键、伪装层
   src/core/settings.js   设置的唯一入口（chrome.storage.local，调试时降级 localStorage）
   src/core/dom.js        el()/append()/icon()/shortNumber()/compactTime()
+  src/core/diagnose.js   一键导出诊断现场（选择器命中数 + 抽取字段 + 首楼 HTML）
   src/nga/parse.js       【核心】Document → 模型（选择器表 + 多路兜底 + blocked 识别）
   src/nga/sanitize.js    【核心】正文克隆净化 → 可排版的 DOM
   src/nga/fetch.js       同源 fetch + DOMParser + 60s 缓存
@@ -78,5 +79,6 @@ extension/
 ## 注意事项
 
 - NGA 对访客返回 `ERROR:15` / `ERROR:1`，解析层用 `detectBlocked()` 识别并给出引导登录的界面；本地开发没有账号时只能调 UI 与解析，真实结构靠 `dev/nga-dom-notes.md` 里的证据（来自多个在维护的 NGA 用户脚本源码）+ 登录态实测核对。
+- 真机排查：遇到解析不对，先让用户点「复制诊断信息」（`core/diagnose.js`），里面有选择器命中数与第一楼 HTML，比截图有用；`dev/fixtures/blocked.html`（`?blocked=1`）可本地复现错误页。
 - `dev/` 里的样例页面是**结构仿真**（按真实类名/层级写，并在页面底部伪造了 `commonui.postArg` / `topicArg` / `__PAGE`），改动解析选择器后请同步更新 fixtures。
 - 涉及隐私的默认值：无图模式默认开、标签页标题中性、不做任何数据上报。

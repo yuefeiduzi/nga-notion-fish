@@ -9,8 +9,9 @@
 
 1. 把扩展装进真 Chrome：`chrome://extensions/` → 开发者模式 → 加载已解压的扩展程序 → 选 `extension/` 目录，
    然后开 `https://ngabbs.com/`（需已登录）。有报错就抳控制台第一条红字。
-2. 登录态下核对真实 DOM（见下一节清单）。在 ego-browser 里登录一次 NGA 即可让我接手核对，
-   或者把某个 `read.php` 页面另存为 HTML 丢进 `dev/fixtures/`。
+2. 登录态下核对真实 DOM（见下一节清单）。解析不对时点侧边栏 **「复制诊断信息」**
+   （或兜底页上的「复制诊断」），把剪贴板里的文本发我 —— 里面有选择器命中数、抽到的字段
+   和第一楼 HTML，足够定位选择器问题；也可以直接把 `read.php` 另存为 HTML 丢进 `dev/fixtures/`。
 
 **开工命令**：
 
@@ -46,6 +47,7 @@ cat dev/nga-dom-notes.md     # 真实结构 + 出处
 
 ### 内容保真
 - [x] 引用块（含嵌套引用）转 `<blockquote>` 并保留作者/时间/链接
+- [x] 一键诊断：`core/diagnose.js` 导出选择器命中数 + 抽取字段 + 首楼 HTML（侧边栏与兜底页都有入口）
 - [x] 折叠块 `[collapse]` → `<details>`
 - [x] 表格、代码块、列表、表情（小图行内保留）
 - [x] 懒加载图片 `data-src` 还原、外链 `target=_blank`、内联脚本/样式/广告/签名过滤
