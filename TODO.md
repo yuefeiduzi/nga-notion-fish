@@ -29,11 +29,12 @@
 ## 待办
 
 ### 需要登录态核对（优先级最高）
-- [ ] 用真实 NGA 页面核对 `parse.js` 的 `SEL` 表：楼层号、发帖时间、赞同数的真实位置
-- [ ] 核对 NGA 的图片懒加载属性与附件框（`file=` / `data-src` / `img.nga.178.com`）
-- [ ] 核对板块页列结构（`td.c4` 是「回复/查看」还是别的顺序）
-- [ ] 核对「只看楼主」`authorid=` 与分页真实上限
-- 参考：`docs/nga-dom-notes.md`（调研笔记，gitignore）
+- [ ] 用真实 NGA 页面核对 `parse.js` 的两条取数路径（`commonui.postArg.data` / 选择器兜底）
+- [ ] 核对 `#postdate{N}` 是否每层楼都有、赞同数 `.recommendvalue` 的展示形态
+- [ ] 核对图片懒加载属性（`data-src` / `file=`）与 `img.nga.178.com` 图床
+- [ ] 核对「只看楼主」`authorid=` 与分页真实上限（`__PAGE[1]` 的口径）
+- [ ] 老页面 GBK 编码是否还会遇到（`fetch.js` 已做 charset 推断）
+- 参考：`dev/nga-dom-notes.md`（选择器证据 + 来源脚本清单）
 
 ### 体验
 - [ ] 楼层锚点跳转（`#pid` / 跳楼输入框）与「本页楼层目录」
@@ -57,6 +58,12 @@
 ### 页面判断
 - `/` → 首页；`/thread.php?fid=` → 板块页；`/read.php?tid=` → 帖子页；其它 → 保持原站
 - 访客被拦：标题为「未登录」/「访客不能直接访问」，正文含 `ERROR:1` / `ERROR:15`
+
+### NGA 自带数据（当前页面才有）
+- `window.commonui.postArg.data[i]`：`pid` / `pAid` / `i`（楼层序号）/ `contentC` / `subjectC` / `uInfoC`
+- `window.commonui.topicArg.data[i]`：数组，`[1]` 标题元素、`[2]` 作者元素、`[7]` fid、`[8]` tid
+- `window.__PAGE = [url, 总页数, 当前页, …]`
+- 加 `?nopostarg=1` 打开样例页可强制走选择器兜底路径
 
 ### 存储
 - `chrome.storage.local` 单键 `reader-settings`：`enabled / theme / hideImages / stealth / bossKey / fontScale / brandText / favorites / recents`

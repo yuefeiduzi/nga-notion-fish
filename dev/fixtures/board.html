@@ -8,16 +8,22 @@
         <link rel="stylesheet" href="/src/styles/app.css" />
     </head>
     <body>
-        <!-- 本地调试样例：结构模拟 NGA thread.php -->
+        <!--
+          本地调试样例。结构按真实 NGA thread.php 的组织方式仿写：
+          #topicrows > table.forumbox > tr.row1/.row2 > td.c1~c4
+            a.topic（标题）/ span[class^=t_k_]（标签）/ a.author / span.silver.postdate
+          加 ?nopostarg=1 可跳过 NGA 站点数据的伪造，用来单独验证选择器兜底路径。
+        -->
         <div id="mmc">
             <div class="nav">
-                <a class="nav_link" href="/">NGA</a>
+                <a class="nav_root" href="/">NGA</a>
+                <span class="nav_spr">-</span>
                 <a class="nav_link" href="/thread.php?fid=-7">游戏综合讨论</a>
             </div>
 
-            <table class="forumbox">
+            <table id="topicrows" class="forumbox">
                 <tbody>
-                    <tr class="topicrow topicrow_top">
+                    <tr class="row1">
                         <td class="c1"><span class="t_k_1">置顶</span></td>
                         <td class="c2">
                             <span class="t_k_1">公告</span>
@@ -25,12 +31,11 @@
                         </td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=1">版务组</a>
-                            <span class="postdate">2026-01-04 10:00</span>
+                            <span class="silver postdate">2026-01-04 10:00</span>
                         </td>
-                        <td class="c4">3 / 45210</td>
-                        <td class="c5">2026-09-14 09:10</td>
+                        <td class="c4"><span class="replies">3</span>/<span class="views">45210</span></td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row2">
                         <td class="c1"></td>
                         <td class="c2">
                             <span class="t_k_2">攻略</span>
@@ -38,22 +43,20 @@
                         </td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a>
-                            <span class="postdate">2026-09-14 12:33</span>
+                            <span class="silver postdate">2026-09-14 12:33</span>
                         </td>
-                        <td class="c4">128 / 8642</td>
-                        <td class="c5">2026-09-14 15:12</td>
+                        <td class="c4">128/8642</td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row1">
                         <td class="c1"></td>
                         <td class="c2"><a class="topic" href="/read.php?tid=1234568">新版本的护盾机制是不是有点过头了</a></td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=32001234">隔壁老王</a>
-                            <span class="postdate">2026-09-14 11:02</span>
+                            <span class="silver postdate">2026-09-14 11:02</span>
                         </td>
-                        <td class="c4">64 / 3120</td>
-                        <td class="c5">2026-09-14 14:58</td>
+                        <td class="c4">64/3120</td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row2">
                         <td class="c1"></td>
                         <td class="c2">
                             <span class="t_k_2">讨论</span>
@@ -61,22 +64,20 @@
                         </td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=33998877">路过的猫</a>
-                            <span class="postdate">2026-09-13 21:40</span>
+                            <span class="silver postdate">2026-09-13 21:40</span>
                         </td>
-                        <td class="c4">312 / 15890</td>
-                        <td class="c5">2026-09-14 15:01</td>
+                        <td class="c4">312/15890</td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row1">
                         <td class="c1"></td>
                         <td class="c2"><a class="topic" href="/read.php?tid=1234570">手机端发热严重，有同样情况的吗</a></td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=31009988">深渊打工仔</a>
-                            <span class="postdate">2026-09-13 19:12</span>
+                            <span class="silver postdate">2026-09-13 19:12</span>
                         </td>
-                        <td class="c4">27 / 2210</td>
-                        <td class="c5">2026-09-14 12:20</td>
+                        <td class="c4">27/2210</td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row2">
                         <td class="c1"></td>
                         <td class="c2">
                             <span class="t_k_3">同人</span>
@@ -84,45 +85,41 @@
                         </td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=31112233">数据党</a>
-                            <span class="postdate">2026-09-12 18:44</span>
+                            <span class="silver postdate">2026-09-12 18:44</span>
                         </td>
-                        <td class="c4">96 / 7820</td>
-                        <td class="c5">2026-09-13 23:11</td>
+                        <td class="c4">96/7820</td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row1">
                         <td class="c1"></td>
                         <td class="c2"><a class="topic" href="/read.php?tid=1234572">求一个新手开荒顺序建议</a></td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=31778899">潜水员</a>
-                            <span class="postdate">2026-09-12 10:03</span>
+                            <span class="silver postdate">2026-09-12 10:03</span>
                         </td>
-                        <td class="c4">45 / 3300</td>
-                        <td class="c5">2026-09-13 20:32</td>
+                        <td class="c4">45/3300</td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row2">
                         <td class="c1"></td>
                         <td class="c2"><a class="topic" href="/read.php?tid=1234573">版本更新后模组失效的临时解决办法</a></td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=33556677">手残本残</a>
-                            <span class="postdate">2026-09-11 22:15</span>
+                            <span class="silver postdate">2026-09-11 22:15</span>
                         </td>
-                        <td class="c4">12 / 942</td>
-                        <td class="c5">2026-09-12 09:41</td>
+                        <td class="c4">12/942</td>
                     </tr>
-                    <tr class="topicrow">
+                    <tr class="row1">
                         <td class="c1"></td>
                         <td class="c2"><a class="topic" href="/read.php?tid=1234574">9 月版本平衡性调整汇总（含解析）</a></td>
                         <td class="c3">
                             <a class="author" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a>
-                            <span class="postdate">2026-09-11 09:30</span>
+                            <span class="silver postdate">2026-09-11 09:30</span>
                         </td>
-                        <td class="c4">203 / 12400</td>
-                        <td class="c5">2026-09-14 08:52</td>
+                        <td class="c4">203/12400</td>
                     </tr>
                 </tbody>
             </table>
 
-            <div class="pagination">
+            <div name="pageball" class="pagination">
                 <a href="/thread.php?fid=-7&page=1">1</a>
                 <a href="/thread.php?fid=-7&page=2">2</a>
                 <a href="/thread.php?fid=-7&page=3">3</a>
@@ -130,6 +127,27 @@
             </div>
         </div>
 
+        <script>
+            // 伪造 NGA 自己的主题列表数据：数组下标 1=标题元素, 2=作者元素, 7=fid, 8=tid
+            (function () {
+                if (/nopostarg=1/.test(location.search)) return;
+                var data = {};
+                Array.prototype.forEach.call(document.querySelectorAll('#topicrows > tbody > tr'), function (row, index) {
+                    var title = row.querySelector('td.c2 a.topic');
+                    if (!title) return;
+                    var author = row.querySelector('td.c3 a.author');
+                    var item = [];
+                    item[1] = title;
+                    item[2] = author;
+                    item[7] = -7;
+                    item[8] = Number((title.getAttribute('href').match(/tid=(\d+)/) || [])[1] || 0);
+                    data[index] = item;
+                });
+                window.commonui = window.commonui || {};
+                window.commonui.topicArg = { data: data };
+                window.__PAGE = ['/thread.php?fid=-7', 3, 1, 0];
+            })();
+        </script>
         <script type="module" src="/dev/harness-boot.js"></script>
     </body>
 </html>

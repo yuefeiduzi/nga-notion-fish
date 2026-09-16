@@ -8,7 +8,7 @@
 
 import { icon } from '../core/dom.js';
 
-/** 直接删掉的节点 */
+/** 直接删掉的节点（签名 / 贴条 / 广告 / 站内控件都在这里） */
 const STRIP_SELECTORS = [
     'script',
     'style',
@@ -29,11 +29,14 @@ const STRIP_SELECTORS = [
     '.postBtnPos',
     '.postInfo',
     '.posterinfo',
+    '.posterInfoLine',
     '.recommendvalue',
     '.goodbad',
     '[class*="goodbad"]',
     '.postsign',
     '.signature',
+    '.sigline',
+    '[id^="postsign"]',
     '.ubbcode-tips',
     '#ubbcode_tips',
     '.postTips',
@@ -43,10 +46,14 @@ const STRIP_SELECTORS = [
     '.ad_',
     '[class*="adsbygoogle"]',
     '[class*="advert"]',
-    '.collapse_btn',
     '.pager',
     '.post_medal',
     '.user_tag',
+    '.r_container',
+    // 贴条（楼层内的小评论）：结构杂、信息密度低，清理掉保持版面干净
+    '.comment_c',
+    '.comment_c_1',
+    '.comment_c_2',
 ];
 
 const INLINE_IMAGE_RE = /(smilie|smiley|post_smiley|e\d{2}\.gif|\/emot)/i;
@@ -66,11 +73,13 @@ export function sanitizeContent(sourceEl, options = {}) {
     // 换一个文档来源时（DOMParser），importNode 会把节点搬到当前 document
     const working = document.importNode(sourceEl, true);
 
+    // 顺序有讲究：
+    // 1. 折叠块必须先转 —— NGA 用 style="display:none" 藏内容，先走 removeNoise 会把正文删掉
+    // 2. 引用/折叠的类名转换必须在 scrubAttributes 之前 —— 后者会把 .quote/.collapse 洗掉
+    convertCollapse(working);
+    convertQuotes(working, baseUrl);
     removeNoise(working);
     unwrapLegacyTags(working);
-    // 注意：转引用/折叠必须在 scrubAttributes 之前 —— 后者会把 .quote/.collapse 类名洗掉
-    convertQuotes(working, baseUrl);
-    convertCollapse(working);
     convertVideos(working, baseUrl);
     scrubAttributes(working, baseUrl);
     processImages(working, baseUrl, hideImages);
@@ -181,16 +190,35 @@ function convertQuotes(root, baseUrl) {
    -------------------------------------------------------------------------- */
 
 function convertCollapse(root) {
-    root.querySelectorAll('div.collapse, .collapse').forEach((node) => {
+    // NGA 现代结构：.collapse_btn（按钮）+ .collapse_content（内容，默认 display:none）
+    Array.from(root.querySelectorAll('.collapse_content')).forEach((node) => {
+        const btn = node.previousElementSibling;
+        const hasButton = Boolean(btn && btn.classList && btn.classList.contains('collapse_btn'));
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = (hasButton && clean(btn.textContent)) || '展开';
+        details.appendChild(summary);
+        while (node.firstChild) details.appendChild(node.firstChild);
+        if (hasButton) {
+            btn.replaceWith(details);
+            node.remove();
+        } else {
+            node.replaceWith(details);
+        }
+    });
+
+    // 老结构与残留的折叠按钮
+    root.querySelectorAll('div.collapse').forEach((node) => {
         const titleNode = node.querySelector(':scope > .collapse_title, :scope > .collapse_head, :scope > b');
         const details = document.createElement('details');
         const summary = document.createElement('summary');
-        summary.textContent = titleNode ? clean(titleNode.textContent) || '展开' : '展开';
+        summary.textContent = (titleNode && clean(titleNode.textContent)) || '展开';
         if (titleNode) titleNode.remove();
         details.appendChild(summary);
         while (node.firstChild) details.appendChild(node.firstChild);
         node.replaceWith(details);
     });
+    root.querySelectorAll('.collapse_btn').forEach((node) => node.remove());
 }
 
 /* --------------------------------------------------------------------------

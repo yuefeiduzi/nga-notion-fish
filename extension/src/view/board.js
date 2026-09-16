@@ -15,7 +15,7 @@ export function renderBoard(model, ctx) {
         pageHead({
             kicker: [
                 board.name ? { text: board.name, url: '' } : { text: '板块' },
-                model.page.max > 1 ? { time: `第 ${model.page.current} / ${model.page.max} 页` } : null,
+                model.page.max > 1 ? { time: `${model.page.current} / ${model.page.max} 页` } : null,
             ],
             title: board.name ? board.name : '帖子列表',
             meta: [

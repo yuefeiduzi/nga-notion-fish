@@ -197,7 +197,9 @@ function errorPage(url, error) {
    -------------------------------------------------------------------------- */
 
 async function navigate(url, options = {}) {
-    if (url === location.href && !options.force) return;
+    // 注意：要用「当前渲染的是哪一页」判断，而不是 location.href ——
+    // 浏览器后退时 location 已经变了，但界面还停在上一页
+    if (!options.force && state.model && state.model.url === url) return;
     const shell = state.shell;
     shell.setLoading(true);
     try {

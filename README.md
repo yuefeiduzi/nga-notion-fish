@@ -63,7 +63,7 @@ nga-notion-fish/
 │   │   ├── view/                # 纯渲染层（shell / home / board / thread / parts）
 │   │   └── styles/              # boot.css + app.css（aihot 风格设计 token）
 │   └── popup/                   # 扩展弹窗设置面板
-├── dev/                         # 本地调试：假 NGA 页面 + 静态服务器
+├── dev/                         # 本地调试：假 NGA 页面 + 静态服务器 + DOM 结构笔记
 ├── assets/                      # README 预览图
 ├── legacy/                      # 旧的 Tampermonkey 用户脚本（v0.2，已被扩展取代）
 └── docs/                        # 本地笔记（gitignore）
@@ -82,7 +82,13 @@ python3 dev/server.py 8765
 # 阅读页       http://127.0.0.1:8765/read.php?tid=1234567
 ```
 
-样例页面会以 `/dev/harness-boot.js` 代替 `boot.js` 启动同一套 `src/` 代码，所以在这里看到的排版就是扩展里的排版。
+样例页面会以 `/dev/harness-boot.js` 代替 `boot.js` 启动同一套 `src/` 代码，所以在这里看到的排版就是扩展里的排版。样例页面还伪造了 NGA 自己的 `commonui.postArg` / `topicArg` / `__PAGE`，用来验证「优先读站点数据」这条路径；加上 `?nopostarg=1` 就能强制走选择器兜底路径：
+
+```
+http://127.0.0.1:8765/read.php?tid=1234567&nopostarg=1
+```
+
+真实 NGA 的 DOM 结构、以及这些选择器的来源脚本清单，整理在 [dev/nga-dom-notes.md](dev/nga-dom-notes.md)。
 
 调试时如果某个页面解析失败，会退化成一个「暂不支持 / 加载失败」的提示页，并给出「以原站方式打开」按钮——此时的界面就是排查解析问题的第一现场。
 

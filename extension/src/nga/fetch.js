@@ -33,7 +33,8 @@ export async function loadDocument(url, options = {}) {
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        const text = await response.text();
+        const buffer = await response.arrayBuffer();
+        const text = decode(buffer, response.headers.get('content-type') || '');
         const doc = new DOMParser().parseFromString(text, 'text/html');
 
         // DOMParser 出来的文档没有 baseURI，塞一个 <base> 让相对链接可以还原
@@ -57,4 +58,25 @@ export async function loadDocument(url, options = {}) {
 export function invalidate(url) {
     if (url) cache.delete(url);
     else cache.clear();
+}
+
+/**
+ * 解码响应体。
+ * 现代 ngabbs.com 是 UTF-8，但老页面/部分接口是 GBK，
+ * 而 fetch 的 response.text() 只认 HTTP 头里的 charset，遇到「charset 只写在 HTML meta 里」
+ * 的老页面就会变成乱码，所以自己识别一次。
+ */
+function decode(buffer, contentType) {
+    const bytes = new Uint8Array(buffer);
+    const headerCharset = (contentType.match(/charset=([\w-]+)/i) || [])[1] || '';
+    const sniff = new TextDecoder('utf-8').decode(bytes.subarray(0, 4096));
+    const metaCharset = (sniff.match(/charset\s*=\s*["']?([\w-]+)/i) || [])[1] || '';
+    const charset = (headerCharset || metaCharset || 'utf-8').toLowerCase();
+
+    try {
+        if (/gbk|gb2312|gb18030/.test(charset)) return new TextDecoder('gb18030').decode(bytes);
+        return new TextDecoder('utf-8').decode(bytes);
+    } catch {
+        return new TextDecoder('utf-8').decode(bytes);
+    }
 }

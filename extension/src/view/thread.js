@@ -16,13 +16,17 @@ export function renderThread(model, ctx) {
         pageHead({
             kicker: [
                 board.name ? { text: board.name, url: board.url || '' } : { text: 'NGA' },
-                model.page.max > 1 ? { time: `第 ${model.page.current} / ${model.page.max} 页` } : null,
+                model.page.max > 1 ? { time: `${model.page.current} / ${model.page.max} 页` } : null,
                 model.onlyAuthor ? { text: '只看楼主' } : null,
             ],
             title: model.title || '帖子',
             meta: [
-                model.totalReplies != null ? `${model.totalReplies} 条回复` : `${model.posts.length} 楼`,
-                model.page.max > 1 ? `本页 ${model.posts.length} 楼` : null,
+                model.totalReplies != null
+                    ? `共 ${model.totalReplies} 条回复`
+                    : model.page.max > 1
+                      ? `本页 ${model.posts.length} 楼`
+                      : `${model.posts.length} 楼`,
+                model.totalReplies != null && model.page.max > 1 ? `本页 ${model.posts.length} 楼` : null,
                 model.posts[0] && model.posts[0].time ? compactTime(model.posts[0].time) : null,
             ],
             actions: [

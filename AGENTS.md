@@ -57,16 +57,22 @@ extension/
 - **样式必须能压住原站**：内容区的排版规则写在 `.ngr-content` 下，并显式重置 `div/span/font` 的继承属性；设计 token 用 `--ng-` 前缀，避免与原站变量撞名。
 - 不引入依赖、不引入构建步骤、不发起与原站无关的网络请求。
 
-## 常用 DOM 选择器（详见 `parse.js` 的 SEL 表）
+## 常用 DOM 选择器（详见 `parse.js` 的 SEL 表与 `dev/nga-dom-notes.md`）
 
 - 首页 `/`：`.catenew`、`.catetitle`、`a[href*="fid="]`
-- 列表页 `/thread.php`：`table.forumbox`、`tr.topicrow`、`td.c2 a.topic`、`td.c2 span[class^="t_k_"]`、`td.c3 a.author`、`td.c3 span.postdate`、`td.c4`（回复/浏览）
-- 详情页 `/read.php`：`[id^="post1strow"]`、`[class*="postrow"]`、`[id*="postauthor"]`、`[id*="postcontent"]`、`[id*="postsubject"]`、`.recommendvalue`、`.quote`、`.postInfo`
-- 导航：`.nav a.nav_link`
-- 分页：`#pagebar a` / `a[href*="page="]`
+- 列表页 `/thread.php`：`#topicrows` > `table.forumbox`，行 `tr.topicrow` / `tr.row1|row2`，`td.c2 a.topic`（标题）、`td.c2 span[class^="t_k_"]`（标签）、`td.c3 a.author`、`span.silver.postdate`、`td.c4`（回复/浏览）
+- 帖子页 `/read.php`：`#m_posts_c` > `table.postbox`，行 `tr.row1`，作者栏 `td.c1 .posterInfoLine .author` + `[name=uid]`，内容栏 `td.c2` 里的 `#postsubject{N}` / `#postcontent{N}` / `.ubbcode` / `.recommendvalue` / `#postdate{N}`
+- 正文里的：`.quote`（引用）、`.collapse_btn` + `.collapse_content`（折叠）、`[id^="postsign"]` / `.sigline`（签名，要删）、`.comment_c_1|2`（贴条，要删）
+- 导航：`.nav_root` / `.nav_spr` / `.nav_link`
+- 分页：`[name="pageball"]` / `#pagebar a` / `a[href*="page="]`
+
+### 两条取数路径（重要）
+
+1. **站点数据（首选，只有当前页面有）**：`window.commonui.postArg.data`（楼层）与 `window.commonui.topicArg.data`（主题列表）直接给出元素与 pid/uid/fid/tid；`window.__PAGE` 给总页数。
+2. **选择器兜底（常态）**：SPA 跳转是 `fetch + DOMParser`，拿不到 `defaultView`，所以没有站点数据。改解析时两条路都要跑：`read.php?...&nopostarg=1` 可以强制走兜底路径。
 
 ## 注意事项
 
-- NGA 对访客返回 `ERROR:15` / `ERROR:1`，解析层用 `detectBlocked()` 识别并给出引导登录的界面；本地开发没有账号时只能调 UI 与解析，真实结构需在登录态下核对（`docs/nga-dom-notes.md` 是调研笔记）。
-- `dev/` 里的样例页面是**结构仿真**而非真实抓取，改动解析选择器后请同步更新 fixtures。
+- NGA 对访客返回 `ERROR:15` / `ERROR:1`，解析层用 `detectBlocked()` 识别并给出引导登录的界面；本地开发没有账号时只能调 UI 与解析，真实结构靠 `dev/nga-dom-notes.md` 里的证据（来自多个在维护的 NGA 用户脚本源码）+ 登录态实测核对。
+- `dev/` 里的样例页面是**结构仿真**（按真实类名/层级写，并在页面底部伪造了 `commonui.postArg` / `topicArg` / `__PAGE`），改动解析选择器后请同步更新 fixtures。
 - 涉及隐私的默认值：无图模式默认开、标签页标题中性、不做任何数据上报。
