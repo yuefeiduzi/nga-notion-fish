@@ -46,6 +46,10 @@ extension/
 
 数据流：`boot.js → app.js → nga/fetch.js → nga/parse.js → view/*.js → DOM`，`nga/sanitize.js` 由 `view/thread.js` 调用。
 
+`dev/` 是调试与参考资料：`dev/README.md` 说明样例页怎么跑；
+`dev/nga-dom-notes.md` 是 NGA 真实结构笔记（每条带出处）；
+`dev/reference/` 是第三方 NGA 脚本源码库，**仅供核对选择器，不要 import、不要打包**。
+
 ## 关键约定
 
 - **先藏后画**：`boot.js` 在 `document_start` 给 `<html>` 加 `ngr-pending`（CSS 里 `visibility: hidden`），任何失败路径都必须把它摘掉，否则用户看到白屏（已有 4s 兜底）。

@@ -1,5 +1,29 @@
 # TODO - NGA 阅读器
 
+## 继续开发从这里开始（下次开工先看这个）
+
+**已经完成的验证**：`dev/` 样例页上，三条页面渲染、SPA 跳转、前进/后退、分页、亮/暗主题、
+快捷键（`Esc Esc` / `i` / `t` / `r` / `j` / `k`）、图片单张与整页加载、两条解析路径（站点数据 / 选择器兜底）全部跑通。
+
+**只有人工能做的两件事（卡在这里）**：
+
+1. 把扩展装进真 Chrome：`chrome://extensions/` → 开发者模式 → 加载已解压的扩展程序 → 选 `extension/` 目录，
+   然后开 `https://ngabbs.com/`（需已登录）。有报错就抳控制台第一条红字。
+2. 登录态下核对真实 DOM（见下一节清单）。在 ego-browser 里登录一次 NGA 即可让我接手核对，
+   或者把某个 `read.php` 页面另存为 HTML 丢进 `dev/fixtures/`。
+
+**开工命令**：
+
+```bash
+python3 dev/server.py 8765   # 本地样例，改解析/排版先在这里跑通
+git log --oneline -5         # 上一次干到哪
+cat dev/nga-dom-notes.md     # 真实结构 + 出处
+```
+
+**优先修的三个风险点**（都是因为没登录态而无法实测的）：
+发帖时间的真实位置（`#postdate{N}` 还是 `.postInfo`）、赞同数形态（`.recommendvalue` 里面到底有没有 `+`）、
+图片懒加载属性（`data-src` / `file=`）与附件框要不要保留。
+
 ## 已完成 ✓
 
 ### 架构（v0.3，Chrome 扩展）
@@ -31,10 +55,11 @@
 ### 需要登录态核对（优先级最高）
 - [ ] 用真实 NGA 页面核对 `parse.js` 的两条取数路径（`commonui.postArg.data` / 选择器兜底）
 - [ ] 核对 `#postdate{N}` 是否每层楼都有、赞同数 `.recommendvalue` 的展示形态
-- [ ] 核对图片懒加载属性（`data-src` / `file=`）与 `img.nga.178.com` 图床
+- [ ] 核对图片懒加载属性（`data-src` / `file=`）与附件框、`img.nga.178.com` 图床
 - [ ] 核对「只看楼主」`authorid=` 与分页真实上限（`__PAGE[1]` 的口径）
+- [ ] 核对列表页 `td.c4` 是「回复/浏览」还是反过来，`.replydate` 要不要展示成「最后回复」
 - [ ] 老页面 GBK 编码是否还会遇到（`fetch.js` 已做 charset 推断）
-- 参考：`dev/nga-dom-notes.md`（选择器证据 + 来源脚本清单）
+- 参考：`dev/nga-dom-notes.md`（逐条出处）+ `dev/reference/`（8 个在维护的第三方脚本源码）
 
 ### 体验
 - [ ] 楼层锚点跳转（`#pid` / 跳楼输入框）与「本页楼层目录」
@@ -47,6 +72,7 @@
 - [ ] `parse.js` 的 fixture 快照测试（保存真实 HTML 样本，回归时对比模型输出）
 - [ ] 扩展图标（当前用默认图标 + 中性名字）
 - [ ] 打包 zip 供离线安装 / 上架 Edge Add-ons
+- [ ] 定期跑 `bash dev/reference/refresh.sh` 看上游选择器有无变化（改版预警）
 
 ### 远期
 - [ ] 支持搜索页、用户页、收藏页的自渲染
