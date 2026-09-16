@@ -1,0 +1,235 @@
+:root {
+    color-scheme: light dark;
+    --p-bg: #faf9f6;
+    --p-card: #ffffff;
+    --p-text: #202a30;
+    --p-text-dim: #657176;
+    --p-border: #dfe4e1;
+    --p-accent: #176b75;
+    --p-soft: rgba(28, 39, 51, 0.04);
+    --p-font:
+        system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+        'Microsoft YaHei', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --p-bg: #13191c;
+        --p-card: #1a2226;
+        --p-text: #e7eceb;
+        --p-text-dim: #89979d;
+        --p-border: rgba(255, 255, 255, 0.1);
+        --p-accent: #12ccd8;
+        --p-soft: rgba(255, 255, 255, 0.05);
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    width: 304px;
+    margin: 0;
+    padding: 14px 16px 12px;
+    background: var(--p-bg);
+    color: var(--p-text);
+    font-family: var(--p-font);
+    font-size: 13px;
+}
+
+.pop-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--p-border);
+}
+
+.pop-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--p-accent);
+    color: #fff;
+    font-weight: 700;
+}
+
+.pop-title {
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.pop-sub {
+    color: var(--p-text-dim);
+    font-size: 11.5px;
+}
+
+.pop-section {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--p-border);
+}
+
+.pop-label {
+    margin-bottom: 8px;
+    color: var(--p-text-dim);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.pop-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 30px;
+}
+
+.pop-row label {
+    color: var(--p-text);
+}
+
+.pop-dim {
+    color: var(--p-text-dim);
+}
+
+.pop-input[type='text'] {
+    width: 132px;
+    padding: 5px 8px;
+    border: 1px solid var(--p-border);
+    border-radius: 8px;
+    background: var(--p-card);
+    color: var(--p-text);
+    font-family: inherit;
+    font-size: 12.5px;
+}
+
+.pop-input[type='range'] {
+    width: 132px;
+    accent-color: var(--p-accent);
+}
+
+input[type='checkbox'] {
+    width: 34px;
+    height: 19px;
+    margin: 0;
+    appearance: none;
+    border: 1px solid var(--p-border);
+    border-radius: 999px;
+    background: var(--p-soft);
+    position: relative;
+    cursor: pointer;
+    transition: background 120ms ease;
+}
+
+input[type='checkbox']::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--p-card);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+input[type='checkbox']:checked {
+    background: var(--p-accent);
+    border-color: transparent;
+}
+
+input[type='checkbox']:checked::after {
+    transform: translateX(15px);
+}
+
+.pop-seg {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid var(--p-border);
+    border-radius: 999px;
+    background: var(--p-soft);
+}
+
+.pop-seg button {
+    padding: 4px 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--p-text-dim);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.pop-seg button.is-active {
+    background: var(--p-card);
+    color: var(--p-text);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+.pop-favs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pop-fav {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border: 1px solid var(--p-border);
+    border-radius: 999px;
+    background: var(--p-card);
+    color: var(--p-text-dim);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.pop-fav:hover {
+    border-color: var(--p-accent);
+    color: var(--p-accent);
+}
+
+.pop-foot {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+}
+
+.pop-btn {
+    flex: 1 1 auto;
+    padding: 7px 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: var(--p-accent);
+    color: #fff;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pop-btn-ghost {
+    border-color: var(--p-border);
+    background: transparent;
+    color: var(--p-text-dim);
+    font-weight: 500;
+}
+
+.pop-hint {
+    padding-top: 10px;
+    color: var(--p-text-dim);
+    font-size: 11px;
+    line-height: 1.6;
+}

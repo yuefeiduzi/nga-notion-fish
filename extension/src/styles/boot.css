@@ -1,0 +1,32 @@
+/* boot.css —— 早于任何内容渲染注入：负责「藏住原站」这件最要命的小事 */
+
+/* 接管前：整页不可见（含背景，避免白闪与原站底色差异） */
+html.ngr-pending {
+    visibility: hidden !important;
+    background: #faf9f6 !important;
+}
+
+html.ngr-pending body {
+    visibility: hidden !important;
+}
+
+/* 接管后：原站的 body 子节点全部让位，只留我们的 #ngr-root */
+html.ngr-active,
+html.ngr-active body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: var(--ng-bg-0, #faf9f6) !important;
+}
+
+html.ngr-active body > *:not(#ngr-root):not(script):not(style):not(link):not(template) {
+    display: none !important;
+}
+
+/* 阅读模式里禁掉原站的滚动条/浮动层 */
+html.ngr-active #mmc,
+html.ngr-active #m_nav,
+html.ngr-active .tp,
+html.ngr-active .mask {
+    display: none !important;
+}

@@ -1,0 +1,1351 @@
+/* ==========================================================================
+   app.css —— 阅读器视觉系统
+   设计语言参考 aihot.news/daily：暖纸底 + 细线分隔 + 编号正文 + 极克制的青色强调
+   所有 token 以 --ng- 前缀命名，避免与原站变量冲突
+   ========================================================================== */
+
+:root,
+:root[data-ngr-theme='light'] {
+    color-scheme: light;
+
+    --ng-bg-0: #faf9f6;
+    --ng-bg-1: #f3f3ef;
+    --ng-bg-2: #e9ede9;
+    --ng-surface-card: #ffffff;
+    --ng-surface-0: rgba(28, 39, 51, 0.025);
+    --ng-surface-1: rgba(28, 39, 51, 0.04);
+    --ng-surface-2: rgba(28, 39, 51, 0.06);
+    --ng-surface-3: rgba(28, 39, 51, 0.09);
+
+    --ng-text-0: #202a30;
+    --ng-text-1: #59656b;
+    --ng-text-2: #657176;
+    --ng-text-soft: #303c42;
+    --ng-text-on-accent: #ffffff;
+
+    --ng-border: #dfe4e1;
+    --ng-border-strong: #d1d9d5;
+    --ng-border-soft: #e9ede9;
+
+    --ng-accent: #176b75;
+    --ng-accent-rgb: 23, 107, 117;
+    --ng-accent-fg: #176b75;
+    --ng-accent-soft: rgba(23, 107, 117, 0.1);
+
+    --ng-amber: #b8873a;
+    --ng-rose: #b3402a;
+    --ng-emerald: #2f7d5c;
+
+    --ng-sidebar-bg: #fdfdfb;
+    --ng-chip-active-bg: #202a30;
+    --ng-chip-active-ink: #ffffff;
+    --ng-code-bg: #ffffff;
+
+    --ng-shadow-soft: 0 4px 12px rgba(28, 39, 51, 0.06);
+    --ng-shadow: 0 12px 32px rgba(28, 39, 51, 0.12);
+    --ng-shadow-thumb: 0 1px 3px rgba(28, 39, 51, 0.14);
+}
+
+:root[data-ngr-theme='dark'] {
+    color-scheme: dark;
+
+    --ng-bg-0: #13191c;
+    --ng-bg-1: #1a2226;
+    --ng-bg-2: #202a2f;
+    --ng-surface-card: #1a2226;
+    --ng-surface-0: rgba(255, 255, 255, 0.03);
+    --ng-surface-1: rgba(255, 255, 255, 0.04);
+    --ng-surface-2: rgba(255, 255, 255, 0.07);
+    --ng-surface-3: rgba(255, 255, 255, 0.1);
+
+    --ng-text-0: #e7eceb;
+    --ng-text-1: #a5b0b3;
+    --ng-text-2: #89979d;
+    --ng-text-soft: #d2dada;
+    --ng-text-on-accent: #0b1114;
+
+    --ng-border: rgba(255, 255, 255, 0.08);
+    --ng-border-strong: rgba(255, 255, 255, 0.12);
+    --ng-border-soft: rgba(255, 255, 255, 0.06);
+
+    --ng-accent: #12ccd8;
+    --ng-accent-rgb: 18, 204, 216;
+    --ng-accent-fg: #2ce2e8;
+    --ng-accent-soft: rgba(18, 204, 216, 0.14);
+
+    --ng-amber: #d3b26a;
+    --ng-rose: #d86a52;
+    --ng-emerald: #5fc79a;
+
+    --ng-sidebar-bg: #161e21;
+    --ng-chip-active-bg: #e7eceb;
+    --ng-chip-active-ink: #13191c;
+    --ng-code-bg: #10151c;
+
+    --ng-shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.35);
+    --ng-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    --ng-shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+:root {
+    --ng-radius: 12px;
+    --ng-radius-sm: 8px;
+    --ng-radius-lg: 16px;
+    --ng-nav-width: 224px;
+    --ng-container: 824px;
+    --ng-dur: 180ms;
+    --ng-dur-fast: 120ms;
+    --ng-font:
+        system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+        'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
+    --ng-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/* ==========================================================================
+   应用外壳
+   ========================================================================== */
+
+#ngr-root {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: grid;
+    grid-template-columns: var(--ng-nav-width) minmax(0, 1fr);
+    background: var(--ng-bg-0);
+    color: var(--ng-text-0);
+    font-family: var(--ng-font);
+    font-size: 14px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'palt' 1;
+}
+
+#ngr-root *,
+#ngr-root *::before,
+#ngr-root *::after {
+    box-sizing: border-box;
+}
+
+#ngr-root [hidden] {
+    display: none !important;
+}
+
+/* ---------- 侧边栏 ---------- */
+
+.ngr-side {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    padding: 18px 12px 14px;
+    background: var(--ng-sidebar-bg);
+    border-right: 1px solid var(--ng-border);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.ngr-side::-webkit-scrollbar,
+.ngr-main::-webkit-scrollbar {
+    width: 8px;
+}
+
+.ngr-side::-webkit-scrollbar-thumb,
+.ngr-main::-webkit-scrollbar-thumb {
+    background: var(--ng-border-strong);
+    border-radius: 99px;
+}
+
+.ngr-side::-webkit-scrollbar-thumb:hover,
+.ngr-main::-webkit-scrollbar-thumb:hover {
+    background: var(--ng-text-2);
+}
+
+.ngr-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 10px 2px;
+    color: var(--ng-text-0);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+}
+
+.ngr-brand:hover {
+    text-decoration: none;
+}
+
+.ngr-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--ng-accent);
+    color: var(--ng-text-on-accent);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.ngr-side-group {
+    padding: 10px 10px 2px;
+    color: var(--ng-text-2);
+    font-family: var(--ng-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ngr-side-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    align-content: start;
+}
+
+.ngr-side-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: var(--ng-radius-sm);
+    background: none;
+    color: var(--ng-text-1);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        background var(--ng-dur-fast) ease,
+        color var(--ng-dur-fast) ease;
+}
+
+.ngr-side-link:hover {
+    background: var(--ng-surface-1);
+    color: var(--ng-text-0);
+    text-decoration: none;
+}
+
+.ngr-side-link.is-active,
+.ngr-side-link.is-active:hover {
+    background: var(--ng-accent-soft);
+    color: var(--ng-accent-fg);
+    font-weight: 600;
+}
+
+.ngr-side-link-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ngr-side-count {
+    color: var(--ng-text-2);
+    font-family: var(--ng-mono);
+    font-size: 11px;
+}
+
+.ngr-side-icon {
+    flex: 0 0 auto;
+    width: 17px;
+    height: 17px;
+    opacity: 0.9;
+}
+
+.ngr-side-empty {
+    padding: 4px 10px 8px;
+    color: var(--ng-text-2);
+    font-size: 12.5px;
+}
+
+.ngr-side-foot {
+    margin-top: auto;
+    display: grid;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ng-border-soft);
+}
+
+/* 主题三段开关（airhot 同款） */
+.ngr-theme-toggle {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: center;
+    height: 32px;
+    padding: 3px;
+    border: 1px solid var(--ng-border);
+    border-radius: 999px;
+    background: var(--ng-surface-0);
+    isolation: isolate;
+}
+
+.ngr-theme-thumb {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    z-index: 0;
+    width: calc((100% - 6px) / 3);
+    border: 1px solid var(--ng-border-strong);
+    border-radius: 999px;
+    background: var(--ng-surface-card);
+    box-shadow: var(--ng-shadow-thumb);
+    transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ngr-theme-thumb[data-pos='dark'] {
+    transform: translateX(0);
+}
+
+.ngr-theme-thumb[data-pos='auto'] {
+    transform: translateX(100%);
+}
+
+.ngr-theme-thumb[data-pos='light'] {
+    transform: translateX(200%);
+}
+
+.ngr-theme-opt {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ng-text-2);
+    cursor: pointer;
+}
+
+.ngr-theme-opt:hover {
+    color: var(--ng-text-1);
+}
+
+.ngr-theme-opt.is-active {
+    color: var(--ng-text-0);
+}
+
+.ngr-theme-opt svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* ---------- 主区域 ---------- */
+
+.ngr-main {
+    position: relative;
+    min-width: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--ng-bg-0);
+    outline: none;
+}
+
+.ngr-main-inner {
+    width: 100%;
+    max-width: var(--ng-container);
+    margin: 0 auto;
+    padding: 42px 48px 88px;
+}
+
+.ngr-progress {
+    position: fixed;
+    top: 0;
+    left: var(--ng-nav-width);
+    right: 0;
+    z-index: 5;
+    height: 2px;
+    background: transparent;
+    pointer-events: none;
+}
+
+.ngr-progress.is-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--ng-accent), transparent);
+    animation: ngr-sweep 1.1s linear infinite;
+}
+
+@keyframes ngr-sweep {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+/* ==========================================================================
+   阅读页头部（帖子的“封面”）
+   ========================================================================== */
+
+.ngr-head {
+    padding-bottom: 26px;
+    border-bottom: 2px solid var(--ng-text-0);
+}
+
+.ngr-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    color: var(--ng-text-1);
+    font-size: 13px;
+}
+
+.ngr-kicker > span:first-child {
+    color: var(--ng-accent-fg);
+    font-weight: 650;
+}
+
+.ngr-kicker a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.ngr-kicker a:hover {
+    color: var(--ng-accent-fg);
+}
+
+.ngr-kicker time {
+    font-family: var(--ng-mono);
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.ngr-title {
+    margin: 14px 0 13px;
+    color: var(--ng-text-0);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.38;
+    letter-spacing: -0.035em;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+}
+
+.ngr-head-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    color: var(--ng-text-2);
+    font-size: 13px;
+}
+
+.ngr-head-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* ---------- 通用控件 ---------- */
+
+.ngr-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 5px 13px;
+    border: 1px solid var(--ng-border-strong);
+    border-radius: 999px;
+    background: var(--ng-surface-card);
+    color: var(--ng-text-1);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        color var(--ng-dur-fast) ease,
+        border-color var(--ng-dur-fast) ease,
+        background var(--ng-dur-fast) ease;
+}
+
+.ngr-btn:hover {
+    border-color: var(--ng-accent);
+    color: var(--ng-accent-fg);
+    text-decoration: none;
+}
+
+.ngr-btn.is-active {
+    border-color: var(--ng-accent);
+    background: var(--ng-accent-soft);
+    color: var(--ng-accent-fg);
+}
+
+.ngr-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.ngr-btn-icon {
+    padding: 5px 9px;
+}
+
+/* ==========================================================================
+   帖子列表（板块页）
+   ========================================================================== */
+
+.ngr-threads {
+    display: flex;
+    flex-direction: column;
+}
+
+.ngr-thread {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 18px;
+    padding: 22px 0 20px;
+    border-bottom: 1px solid var(--ng-border);
+    color: inherit;
+    text-decoration: none;
+    transition: background var(--ng-dur-fast) ease;
+}
+
+.ngr-thread:hover {
+    text-decoration: none;
+}
+
+.ngr-thread-marker {
+    color: var(--ng-accent-fg);
+    font-family: var(--ng-mono);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.7;
+    font-variant-numeric: tabular-nums;
+}
+
+.ngr-thread:hover .ngr-thread-title {
+    color: var(--ng-accent-fg);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+}
+
+.ngr-thread-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+    color: var(--ng-text-2);
+    font-size: 12px;
+}
+
+.ngr-thread-title {
+    margin: 5px 0 6px;
+    color: var(--ng-text-0);
+    font-size: 19px;
+    font-weight: 650;
+    line-height: 1.5;
+    letter-spacing: -0.015em;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+}
+
+.ngr-thread-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+    color: var(--ng-text-2);
+    font-size: 12.5px;
+}
+
+.ngr-thread-meta time,
+.ngr-thread-meta .ngr-num {
+    font-family: var(--ng-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.ngr-thread-excerpt {
+    margin: 6px 0 0;
+    color: var(--ng-text-soft);
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.ngr-tag {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--ng-surface-2);
+    color: var(--ng-text-1);
+    font-size: 11.5px;
+    font-weight: 500;
+}
+
+.ngr-tag.is-hot {
+    background: rgba(179, 64, 42, 0.12);
+    color: var(--ng-rose);
+}
+
+.ngr-tag.is-pinned {
+    background: var(--ng-accent-soft);
+    color: var(--ng-accent-fg);
+}
+
+/* ==========================================================================
+   楼层（阅读正文）
+   ========================================================================== */
+
+.ngr-floors {
+    display: flex;
+    flex-direction: column;
+}
+
+.ngr-floor {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 18px;
+    padding: 28px 0 26px;
+    border-bottom: 1px solid var(--ng-border);
+    scroll-margin-top: 16px;
+}
+
+.ngr-floor:last-child {
+    border-bottom: 0;
+}
+
+.ngr-floor-marker {
+    color: var(--ng-accent-fg);
+    font-family: var(--ng-mono);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.65;
+    font-variant-numeric: tabular-nums;
+}
+
+.ngr-floor:target {
+    background: var(--ng-accent-soft);
+    border-radius: var(--ng-radius-sm);
+}
+
+.ngr-floor-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+    color: var(--ng-text-2);
+    font-size: 12.5px;
+    line-height: 1.7;
+}
+
+.ngr-floor-author {
+    color: var(--ng-text-1);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.ngr-floor-author:hover {
+    color: var(--ng-accent-fg);
+}
+
+.ngr-floor-meta time {
+    font-family: var(--ng-mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.ngr-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--ng-accent-soft);
+    color: var(--ng-accent-fg);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.ngr-recommend {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--ng-text-2);
+    font-family: var(--ng-mono);
+    font-size: 12px;
+}
+
+.ngr-recommend svg {
+    width: 12px;
+    height: 12px;
+}
+
+.ngr-floor-subject {
+    margin: 8px 0 10px;
+    color: var(--ng-text-0);
+    font-size: 22px;
+    font-weight: 650;
+    line-height: 1.52;
+    letter-spacing: -0.018em;
+    overflow-wrap: anywhere;
+}
+
+/* 首楼（楼主）视觉权重更高，与 aihot 第一条 story 同款处理 */
+.ngr-floor.is-op .ngr-floor-subject {
+    font-size: 26px;
+}
+
+.ngr-floor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    opacity: 0;
+    transition: opacity var(--ng-dur) ease;
+}
+
+.ngr-floor:hover .ngr-floor-actions,
+.ngr-floor:focus-within .ngr-floor-actions {
+    opacity: 1;
+}
+
+.ngr-floor-action {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ng-text-2);
+    font-family: inherit;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.ngr-floor-action:hover {
+    color: var(--ng-accent-fg);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* ==========================================================================
+   正文排版（净化后的原站 HTML）
+   ========================================================================== */
+
+.ngr-content {
+    color: var(--ng-text-soft);
+    font-size: calc(16px * var(--ng-scale, 1));
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.ngr-content > :first-child {
+    margin-top: 0;
+}
+
+.ngr-content > :last-child {
+    margin-bottom: 0;
+}
+
+/* 压掉原站样式里最常泄漏的几类属性 */
+.ngr-content div,
+.ngr-content span,
+.ngr-content font,
+.ngr-content section,
+.ngr-content article {
+    max-width: 100%;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    text-align: left;
+    float: none;
+}
+
+.ngr-content p {
+    margin: 0 0 14px;
+}
+
+.ngr-content b,
+.ngr-content strong {
+    color: var(--ng-text-0);
+    font-weight: 650;
+}
+
+.ngr-content i,
+.ngr-content em {
+    color: var(--ng-text-1);
+}
+
+.ngr-content h1,
+.ngr-content h2,
+.ngr-content h3,
+.ngr-content h4 {
+    margin: 22px 0 10px;
+    color: var(--ng-text-0);
+    font-size: 18px;
+    font-weight: 650;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+}
+
+.ngr-content ul,
+.ngr-content ol {
+    margin: 0 0 14px;
+    padding-left: 22px;
+}
+
+.ngr-content li {
+    margin: 4px 0;
+}
+
+.ngr-content hr {
+    height: 1px;
+    margin: 20px 0;
+    border: 0;
+    background: var(--ng-border);
+}
+
+.ngr-content a {
+    color: var(--ng-text-0);
+    text-decoration: underline;
+    text-decoration-color: var(--ng-border-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+}
+
+.ngr-content a:hover {
+    color: var(--ng-accent-fg);
+    text-decoration-color: currentColor;
+}
+
+.ngr-content img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 14px 0;
+    border: 1px solid var(--ng-border);
+    border-radius: 10px;
+    background: var(--ng-surface-0);
+}
+
+/* 表情/小图标不参与大图排版 */
+.ngr-content img.ngr-inline-img {
+    display: inline-block;
+    margin: 0 2px;
+    border: 0;
+    border-radius: 0;
+    vertical-align: -3px;
+}
+
+/* 引用（NGA 的 .quote 会被净化成 blockquote） */
+.ngr-content blockquote,
+.ngr-quote {
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-left: 2px solid var(--ng-accent);
+    border-radius: 0 var(--ng-radius-sm) var(--ng-radius-sm) 0;
+    background: var(--ng-surface-0);
+    color: var(--ng-text-1);
+    font-size: 14.5px;
+    line-height: 1.8;
+}
+
+.ngr-content blockquote blockquote {
+    margin-top: 10px;
+    border-left-color: var(--ng-border-strong);
+    background: var(--ng-surface-1);
+}
+
+.ngr-quote-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    color: var(--ng-text-2);
+    font-size: 12px;
+}
+
+.ngr-quote-head a {
+    color: var(--ng-text-1);
+    text-decoration: none;
+}
+
+.ngr-quote-head a:hover {
+    color: var(--ng-accent-fg);
+}
+
+.ngr-content table {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 14px 0;
+    border-collapse: collapse;
+    overflow-x: auto;
+    font-size: 14px;
+}
+
+.ngr-content th,
+.ngr-content td {
+    padding: 6px 10px;
+    border: 1px solid var(--ng-border);
+    text-align: left;
+}
+
+.ngr-content th {
+    background: var(--ng-surface-1);
+    color: var(--ng-text-0);
+    font-weight: 600;
+}
+
+.ngr-content pre,
+.ngr-content code {
+    font-family: var(--ng-mono);
+    font-size: 13.5px;
+    line-height: 1.7;
+}
+
+.ngr-content pre {
+    margin: 14px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--ng-border);
+    border-radius: var(--ng-radius-sm);
+    background: var(--ng-code-bg);
+    overflow-x: auto;
+}
+
+.ngr-content code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--ng-surface-2);
+}
+
+.ngr-content pre code {
+    padding: 0;
+    background: none;
+}
+
+/* 折叠块（NGA [collapse]） */
+.ngr-content details {
+    margin: 14px 0;
+    padding: 10px 14px;
+    border: 1px solid var(--ng-border);
+    border-radius: var(--ng-radius-sm);
+    background: var(--ng-surface-0);
+}
+
+.ngr-content summary {
+    color: var(--ng-text-1);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.ngr-video {
+    margin: 14px 0;
+    color: var(--ng-text-2);
+    font-size: 13px;
+}
+
+/* 无图模式：图片占位按钮 */
+.ngr-img-ph {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    padding: 8px 13px;
+    border: 1px dashed var(--ng-border-strong);
+    border-radius: var(--ng-radius-sm);
+    background: var(--ng-surface-0);
+    color: var(--ng-text-2);
+    font-family: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+.ngr-img-ph:hover {
+    border-color: var(--ng-accent);
+    color: var(--ng-accent-fg);
+}
+
+.ngr-img-ph svg {
+    width: 14px;
+    height: 14px;
+}
+
+.ngr-hide-images .ngr-content img {
+    display: none;
+}
+
+/* ==========================================================================
+   分页 / 索引
+   ========================================================================== */
+
+.ngr-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 26px;
+}
+
+.ngr-pager .ngr-spacer {
+    flex: 1 1 auto;
+}
+
+.ngr-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 5px 13px;
+    border: 1px solid var(--ng-border-strong);
+    border-radius: 999px;
+    background: var(--ng-surface-card);
+    color: var(--ng-text-1);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition:
+        background var(--ng-dur-fast) ease,
+        color var(--ng-dur-fast) ease,
+        border-color var(--ng-dur-fast) ease;
+}
+
+.ngr-chip:hover {
+    border-color: var(--ng-accent);
+    color: var(--ng-accent-fg);
+    text-decoration: none;
+}
+
+.ngr-chip.is-active {
+    border-color: transparent;
+    background: var(--ng-chip-active-bg);
+    color: var(--ng-chip-active-ink);
+    font-weight: 700;
+}
+
+.ngr-chip.is-disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.ngr-chip-jump {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    color: var(--ng-text-2);
+    font-size: 12.5px;
+}
+
+.ngr-chip-jump input {
+    width: 58px;
+    min-height: 32px;
+    padding: 4px 8px;
+    border: 1px solid var(--ng-border-strong);
+    border-radius: 8px;
+    background: var(--ng-surface-card);
+    color: var(--ng-text-0);
+    font-family: var(--ng-mono);
+    font-size: 12.5px;
+    text-align: center;
+}
+
+.ngr-chip-jump input:focus {
+    border-color: var(--ng-accent);
+    outline: none;
+}
+
+/* 首页板块目录 */
+.ngr-forum-group {
+    margin: 0 0 30px;
+}
+
+.ngr-forum-group-title {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ng-border-soft);
+    color: var(--ng-text-2);
+    font-family: var(--ng-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ngr-forum-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 6px;
+}
+
+.ngr-forum-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: var(--ng-radius-sm);
+    color: var(--ng-text-1);
+    font-size: 14px;
+    text-decoration: none;
+    transition: background var(--ng-dur-fast) ease;
+}
+
+.ngr-forum-item:hover {
+    background: var(--ng-surface-1);
+    color: var(--ng-text-0);
+    text-decoration: none;
+}
+
+.ngr-forum-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ngr-star {
+    flex: 0 0 auto;
+    padding: 2px;
+    border: 0;
+    background: none;
+    color: var(--ng-border-strong);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--ng-dur-fast) ease;
+}
+
+.ngr-forum-item:hover .ngr-star,
+.ngr-side-link:hover .ngr-star,
+.ngr-star.is-on {
+    opacity: 1;
+}
+
+.ngr-star.is-on {
+    color: var(--ng-amber);
+}
+
+.ngr-star svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ==========================================================================
+   空态 / 错误态 / 骨架
+   ========================================================================== */
+
+.ngr-empty {
+    padding: 42px 0;
+    color: var(--ng-text-2);
+    font-size: 14px;
+    text-align: center;
+}
+
+.ngr-notice {
+    margin: 24px 0;
+    padding: 15px 18px;
+    border: 1px solid var(--ng-border);
+    border-left: 2px solid var(--ng-accent);
+    border-radius: 0 var(--ng-radius-sm) var(--ng-radius-sm) 0;
+    background: var(--ng-surface-0);
+    color: var(--ng-text-1);
+    font-size: 13.5px;
+}
+
+.ngr-notice code {
+    font-family: var(--ng-mono);
+    font-size: 12.5px;
+}
+
+.ngr-skel {
+    height: 13px;
+    margin: 12px 0;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--ng-surface-1), var(--ng-surface-2), var(--ng-surface-1));
+    background-size: 200% 100%;
+    animation: ngr-shimmer 1.4s linear infinite;
+}
+
+@keyframes ngr-shimmer {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
+}
+
+/* 回到顶部 */
+.ngr-top {
+    position: fixed;
+    right: 26px;
+    bottom: 26px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--ng-border-strong);
+    border-radius: 50%;
+    background: var(--ng-surface-card);
+    box-shadow: var(--ng-shadow-soft);
+    color: var(--ng-text-1);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition:
+        opacity var(--ng-dur) ease,
+        visibility var(--ng-dur) ease,
+        transform var(--ng-dur) ease,
+        color var(--ng-dur-fast) ease,
+        border-color var(--ng-dur-fast) ease;
+}
+
+.ngr-top.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+
+.ngr-top:hover {
+    border-color: var(--ng-accent);
+    color: var(--ng-accent-fg);
+}
+
+.ngr-top svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 轻提示 */
+.ngr-toast {
+    position: fixed;
+    bottom: 26px;
+    left: 50%;
+    z-index: 8;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: var(--ng-chip-active-bg);
+    color: var(--ng-chip-active-ink);
+    font-size: 12.5px;
+    opacity: 0;
+    transform: translate(-50%, 8px);
+    transition:
+        opacity var(--ng-dur) ease,
+        transform var(--ng-dur) ease;
+    pointer-events: none;
+}
+
+.ngr-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* ==========================================================================
+   摸鱼应急层（连按两下 Esc）
+   ========================================================================== */
+
+.ngr-boss {
+    position: fixed;
+    inset: 0;
+    z-index: 9;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 56px 64px;
+    background: #ffffff;
+    color: #1f2328;
+    font-family: var(--ng-font);
+}
+
+.ngr-boss h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.ngr-boss p {
+    max-width: 720px;
+    margin: 0;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.9;
+}
+
+.ngr-boss table {
+    width: 100%;
+    max-width: 720px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.ngr-boss th,
+.ngr-boss td {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+.ngr-boss th {
+    background: #f7f8f9;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   窄屏
+   ========================================================================== */
+
+@media (max-width: 900px) {
+    #ngr-root {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ngr-side {
+        display: none;
+    }
+
+    .ngr-main-inner {
+        padding: 26px 20px 72px;
+    }
+
+    .ngr-progress {
+        left: 0;
+    }
+
+    .ngr-title {
+        font-size: 25px;
+    }
+
+    .ngr-floor,
+    .ngr-thread {
+        grid-template-columns: 26px minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .ngr-floor.is-op .ngr-floor-subject {
+        font-size: 21px;
+    }
+}

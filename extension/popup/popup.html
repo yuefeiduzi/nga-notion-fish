@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>阅读器设置</title>
+        <link rel="stylesheet" href="popup.css" />
+    </head>
+    <body>
+        <header class="pop-head">
+            <span class="pop-mark">R</span>
+            <div>
+                <div class="pop-title">阅读器</div>
+                <div class="pop-sub">把论坛读成资讯</div>
+            </div>
+        </header>
+
+        <section class="pop-section">
+            <div class="pop-row">
+                <label for="enabled">阅读模式</label>
+                <input type="checkbox" id="enabled" data-key="enabled" />
+            </div>
+            <div class="pop-row">
+                <label for="hideImages">无图模式</label>
+                <input type="checkbox" id="hideImages" data-key="hideImages" />
+            </div>
+            <div class="pop-row">
+                <label for="stealth">应急伪装</label>
+                <input type="checkbox" id="stealth" data-key="stealth" />
+            </div>
+            <div class="pop-row">
+                <label for="bossKey">连按 Esc 假页面</label>
+                <input type="checkbox" id="bossKey" data-key="bossKey" />
+            </div>
+        </section>
+
+        <section class="pop-section">
+            <div class="pop-label">主题</div>
+            <div class="pop-seg" id="theme">
+                <button type="button" data-theme="dark">深色</button>
+                <button type="button" data-theme="auto">跟随系统</button>
+                <button type="button" data-theme="light">浅色</button>
+            </div>
+        </section>
+
+        <section class="pop-section">
+            <div class="pop-row">
+                <label for="brandText">标签页标题</label>
+                <input type="text" id="brandText" data-key="brandText" class="pop-input" maxlength="16" />
+            </div>
+            <div class="pop-row">
+                <label for="fontScale">正文字号</label>
+                <input type="range" id="fontScale" data-key="fontScale" min="85" max="130" step="5" />
+            </div>
+        </section>
+
+        <section class="pop-section">
+            <div class="pop-label">收藏的板块 <span id="fav-count" class="pop-dim"></span></div>
+            <div id="favorites" class="pop-favs"></div>
+        </section>
+
+        <footer class="pop-foot">
+            <button type="button" id="open-nga" class="pop-btn">打开 NGA</button>
+            <button type="button" id="clear-recents" class="pop-btn pop-btn-ghost">清空最近浏览</button>
+        </footer>
+        <div class="pop-hint">快捷键：i 无图 · t 主题 · g 首页 · r 刷新 · Esc Esc 假页面</div>
+
+        <script type="module" src="popup.js"></script>
+    </body>
+</html>

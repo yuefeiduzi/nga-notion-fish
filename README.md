@@ -1,85 +1,97 @@
-# NGA 摸鱼模式
+# NGA 阅读器（Reader）
 
-将 NGA（ngabbs.com）游戏论坛转换为简洁的阅读界面，方便摸鱼看游戏攻略和帖子。
+把 NGA 论坛（ngabbs.com / bbs.nga.cn）读成一份**资讯日报**：侧边栏导航 + 数字编号的楼层正文，暖白纸面、细线分隔、克制的青色强调。
 
-## 功能特性
+设计语言参考 [aihot.news](https://aihot.news/daily) 的日报阅读页——那种「像在看一份内部资讯」而不是「像在逛论坛」的观感，正是办公场景下需要的。
 
-- **一键切换**：使用快捷键 `Q` 快速切换摸鱼模式
-- **完整浏览体验**：支持首页、板块列表、文章详情三级页面
-- **无损体验**：保留所有帖子内容，只改变视觉样式
+![阅读页](assets/preview-reading.png)
 
-## 支持的游戏板块
+> 上图是 `dev/` 样例页面在阅读模式下的实际渲染（真实 NGA 页面版式一致）。
 
-### Moba / MOBA
-- 英雄联盟、英雄联盟手游、云顶之弈
-- DOTA2、刀塔霸业
-- 无畏契约
+## 特性
 
-### 暴雪游戏
-- 魔兽世界、炉石传说、守望先锋
-- 暗黑破坏神、星际争霸、风暴英雄
+- **整站改写，不是换皮**：从 `document_start` 起接管页面，原站 HTML 只作为数据源，页面结构、字体、配色、间距全部由扩展渲染，原站 CSS/JS 不再参与显示。
+- **阅读页（read.php）**：楼层按 `01 / 02 / 03 …` 编号排版，楼主标记、发帖时间、赞同数、引用块、嵌套引用、表格、代码块、折叠块、表情全部保留。
+- **板块页（thread.php）**：主题列表带标签（置顶/精华/板块标签）、作者、时间、回复数、浏览量，分页用胶囊按钮。
+- **首页（/）**：板块目录按分组平铺，鼠标悬停即可 ☆ 收藏到侧边栏。
+- **无图模式**：默认不加载图片（摸鱼 + 省流量），正文里显示「图片（点击加载）」占位按钮，可单张加载，也可一键显示整页。
+- **暗色模式**：深色 / 跟随系统 / 浅色三档，随系统自动切换。
+- **应急伪装**：标签页标题与图标变成中性的「阅读器」；连按两下 `Esc` 立刻切到一份假的「项目进度」页面（再按 `Esc` `Esc` 切回）。
+- **无刷新浏览**：站内跳转走 `fetch + 自渲染`，不整页刷新，也没有原站加载闪烁。
+- **最近浏览 / 收藏板块**：存在 `chrome.storage.local`，popup 里可管理。
 
-### 主机游戏
-- 艾尔登法环、塞尔达传说、动物森友会
-- 黑神话:悟空、博德之门、怪物猎人
-- PlayStation、XBOX、Nintendo
+## 安装
 
-### 手游
-- 原神、明日方舟、崩坏:星穹铁道
-- 王者荣耀、碧蓝航线、阴阳师
-- 绝区零、鸣潮、少女前线
+1. 打开 `chrome://extensions/`（Edge 为 `edge://extensions/`）
+2. 打开右上角「开发者模式」
+3. 点「加载已解压的扩展程序」，选择本仓库的 **`extension/`** 目录
+4. 打开 `https://ngabbs.com/`（需要先登录 NGA），页面会自动进入阅读模式
 
-### 更多板块
-- 二次元、游戏王、东方Project
-- Vtuber、GalGame、Fate
-- Steam Deck、PS5、Xbox Series
+> 扩展名与图标刻意做得中性（`阅读器 Reader`），扩展管理页里也不显眼。
 
-## 快速开始
+## 使用
 
-### 安装
+| 快捷键 | 作用 |
+| --- | --- |
+| `Esc` `Esc` | 切换应急伪装页 |
+| `i` | 无图模式开关 |
+| `t` | 切换主题（浅色 → 深色 → 跟随系统） |
+| `g` | 回到板块首页 |
+| `r` | 刷新当前页 |
+| `j` / `k` | 向下 / 向上滚动 |
 
-1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 浏览器扩展
-2. 点击 Tampermonkey 图标 → "添加新脚本"
-3. 将 `src/nga-notion.user.js` 的内容复制到编辑器中
-4. 保存即可
+点扩展图标可打开设置面板：总开关、无图模式、应急伪装、假页面快捷键、主题、标签页标题、正文字号、收藏板块、清空最近浏览。
 
-### 使用
+需要回复/点赞时，点阅读页头部的「原站」按钮，会在原站打开同一页（可在 popup 里重新开启阅读模式）。
 
-1. 访问 https://bbs.nga.cn/
-2. 按 `Q` 键切换摸鱼模式
-3. 页面将转换为 Notion 风格的文档样式
-
-## 项目结构
+## 目录结构
 
 ```
-nga-extension/
-├── README.md                 # 项目说明
-├── CLAUDE.md                 # AI 开发指南
-├── TODO.md                   # 开发计划
-├── src/
-│   └── nga-notion.user.js    # 主脚本文件
-└── docs/
-    └── ...                   # 文档和参考资料
+nga-notion-fish/
+├── extension/                   # Chrome 扩展（MV3，无构建、无依赖）
+│   ├── manifest.json
+│   ├── src/
+│   │   ├── boot.js              # 内容脚本入口：document_start 藏原站 → 动态 import 应用
+│   │   ├── app.js               # 控制器：取页 → 解析 → 渲染 → 路由 / 快捷键 / 伪装
+│   │   ├── core/
+│   │   │   ├── settings.js      # 设置与存储（chrome.storage，本地调试降级到 localStorage）
+│   │   │   └── dom.js           # el()/icon() 等极简 DOM 工具
+│   │   ├── nga/
+│   │   │   ├── parse.js         # 【核心】NGA Document → 结构化模型
+│   │   │   ├── sanitize.js      # 【核心】正文克隆净化（引用/折叠/图片/链接/表格）
+│   │   │   └── fetch.js         # 同源取页 + DOMParser + 短缓存
+│   │   ├── view/                # 纯渲染层（shell / home / board / thread / parts）
+│   │   └── styles/              # boot.css + app.css（aihot 风格设计 token）
+│   └── popup/                   # 扩展弹窗设置面板
+├── dev/                         # 本地调试：假 NGA 页面 + 静态服务器
+├── assets/                      # README 预览图
+├── legacy/                      # 旧的 Tampermonkey 用户脚本（v0.2，已被扩展取代）
+└── docs/                        # 本地笔记（gitignore）
 ```
 
-## 开发
+## 开发与调试
 
-### 本地调试
+没有构建步骤，改完源码在 `chrome://extensions/` 里点一下「重新加载」即可。
 
-1. 在 Tampermonkey 中创建新脚本
-2. 将 `src/nga-notion.user.js` 内容复制进去
-3. 修改后保存，刷新 NGA 页面即可查看效果
+没有 NGA 账号也能调 UI：`dev/` 下有一套结构仿真的样例页面。
 
-### 快捷键
+```bash
+python3 dev/server.py 8765
+# 首页         http://127.0.0.1:8765/
+# 板块页       http://127.0.0.1:8765/thread.php?fid=-7
+# 阅读页       http://127.0.0.1:8765/read.php?tid=1234567
+```
 
-- `Q`：切换摸鱼模式
+样例页面会以 `/dev/harness-boot.js` 代替 `boot.js` 启动同一套 `src/` 代码，所以在这里看到的排版就是扩展里的排版。
 
-## 兼容性
+调试时如果某个页面解析失败，会退化成一个「暂不支持 / 加载失败」的提示页，并给出「以原站方式打开」按钮——此时的界面就是排查解析问题的第一现场。
 
-- Chrome + Tampermonkey
-- Edge + Tampermonkey
-- Safari + Tampermonkey
-- Firefox + Tampermonkey
+## 已知限制
+
+- **必须登录**：NGA 对访客返回 `ERROR:15`，未登录时阅读模式会给出引导登录的提示页。
+- **只读**：回复、点赞、私信等交互仍在原站完成。
+- 解析依赖 NGA 现有 DOM 结构（`table.forumbox`、`[id^="post1strow"]`、`[id*="postcontent"]` 等），NGA 改版时可能需要调整 `src/nga/parse.js` 里的选择器表。
+- 目前覆盖首页 / 板块页 / 帖子页三类页面，搜索页、用户页等仍走原站。
 
 ## License
 

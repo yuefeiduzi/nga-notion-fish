@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <title>[攻略] 12 层满星配队与轴表整理（9 月版本）- NGA玩家社区</title>
+        <link rel="icon" href="data:," />
+        <link rel="stylesheet" href="/src/styles/boot.css" />
+        <link rel="stylesheet" href="/src/styles/app.css" />
+    </head>
+    <body>
+        <!-- 本地调试样例：结构模拟 NGA read.php，仅用于开发阅读模式的排版与解析 -->
+        <div id="mmc">
+            <div class="nav">
+                <a class="nav_link" href="/">NGA</a>
+                <a class="nav_link" href="/thread.php?fid=-7">游戏综合讨论</a>
+                <a class="nav_link" href="/read.php?tid=1234567">[攻略] 12 层满星配队与轴表整理（9 月版本）</a>
+            </div>
+
+            <table class="postrow" id="post1strow987654321">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654321">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postsubject" id="postsubject987654321">[攻略] 12 层满星配队与轴表整理（9 月版本）</div>
+                        <div class="postcontent" id="postcontent987654321">
+                            <div class="ubbcode">
+                                这次深渊 12 层换了新的机制，上半的护盾是<b>反击型</b>，所以
+                                <font color="#ff6600">不要带高频普攻角色</font>，否则盾反会直接把主 C 打残。
+                                <br /><br />
+                                先说结论，稳定满星的三种配队：
+                                <ul>
+                                    <li>双雷 + 护盾：最稳，容错高，适合手残</li>
+                                    <li>雷火超载：上限高，但需要卡轴</li>
+                                    <li>单雷单水：本期下半最优解</li>
+                                </ul>
+                                <div class="quote">
+                                    <b>Post by <a href="/nuke.php?func=ucp&uid=32001234">隔壁老王</a> (2026-09-12 09:12):</b><br />
+                                    12 层是不是不打满也能拿完奖励？
+                                </div>
+                                回答上面的问题：能，但会少 150 原石，看你在不在意。<br />
+                                <br />
+                                轴表（上半）：
+                                <table border="1" cellspacing="0">
+                                    <tr>
+                                        <th>时间</th>
+                                        <th>动作</th>
+                                        <th>备注</th>
+                                    </tr>
+                                    <tr>
+                                        <td>0s</td>
+                                        <td>开 E 吃球</td>
+                                        <td>必须站桩 1 秒</td>
+                                    </tr>
+                                    <tr>
+                                        <td>6s</td>
+                                        <td>切人开大</td>
+                                        <td>注意打断</td>
+                                    </tr>
+                                </table>
+                                <br />
+                                走位示意图：
+                                <img src="about:blank" data-src="/dev/fixtures/route.png" width="720" height="405" alt="走位示意图" />
+                                <br />
+                                <div class="collapse">
+                                    <div class="collapse_title">展开：下半具体循环</div>
+                                    下半先切辅助上减抗，再进主 C 的爆发窗口，循环 2 次即可。
+                                </div>
+                                <br />
+                                代码化之后的循环（方便抄作业）：
+                                <pre><code>for (int i = 0; i &lt; 2; i++) {
+    castSkill("E");
+    swapTo("main");
+    burst();
+}</code></pre>
+                                表情测试：<img src="/dev/fixtures/smile.gif" alt="笑" width="20" height="20" />
+                                <br />
+                                原始数据来源：<a href="https://example.com/axis-table" target="_blank">example.com 轴表</a>
+                                <div class="postInfo" id="postInfo987654321"><span class="postdate">2026-09-14 12:33</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos">
+                            <span class="recommendvalue">+128</span>
+                            <a class="goodbad" href="#">赞</a>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="postrow" id="post987654322">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654322">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=32001234">隔壁老王</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postsubject" id="postsubject987654322" style="display: none">Re：[攻略] 12 层满星配队与轴表整理（9 月版本）</div>
+                        <div class="postcontent" id="postcontent987654322">
+                            <div class="ubbcode">
+                                感谢整理，按这个轴打了两遍就满了。<br />
+                                补充一个细节：如果队伍里没有减抗，6 秒那一刀会差 3% 血量，可以考虑把爆发提前到 5.5 秒。
+                                <div class="postInfo"><span class="postdate">2026-09-14 12:41</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos"><span class="recommendvalue">+42</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="postrow" id="post987654323">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654323">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=31009988">深渊打工仔</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postcontent" id="postcontent987654323">
+                            <div class="ubbcode">
+                                <div class="quote"><b>Post by 猫猫头实验体 (2026-09-14 12:33):</b><br />双雷 + 护盾：最稳，容错高，适合手残</div>
+                                这句话我不太同意，双雷的充能需求很高，练度不够的话反而更难受。<br /><br />
+                                <div class="quote">
+                                    <b>Post by 隔壁老王 (2026-09-14 12:41):</b><br />
+                                    <div class="quote"><b>Post by 猫猫头实验体 (2026-09-14 12:33):</b><br />不要带高频普攻角色</div>
+                                    嵌套引用测试
+                                </div>
+                                总之还是看自己的队伍池，别硬抄。
+                                <div class="postInfo"><span class="postdate">2026-09-14 13:02</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos"><span class="recommendvalue">+7</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="postrow" id="post987654324">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654324">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=33556677">手残本残</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postcontent" id="postcontent987654324">
+                            <div class="ubbcode">
+                                手残表示 6 秒那一刀永远打不中，有没有更宽容的轴……<br />
+                                顺便问一下图里的走位是必须的吗？<img src="about:blank" data-src="/dev/fixtures/position.png" alt="走位图" />
+                                <div class="postInfo"><span class="postdate">2026-09-14 13:20</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos"><span class="recommendvalue">+1</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="postrow" id="post987654325">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654325">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postcontent" id="postcontent987654325">
+                            <div class="ubbcode">
+                                不是必须的，那两张图只是解释护盾的判定范围：<br />
+                                <b>半径 3 米内</b>才会反弹，所以贴着边输出就行。<br />
+                                更宽容的轴可以看下半的循环，把爆发放在 7 秒，损失一点点上限但基本不会空。
+                                <div class="postInfo"><span class="postdate">2026-09-14 13:35</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos"><span class="recommendvalue">+19</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="postrow" id="post987654326">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654326">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=33998877">路过的猫</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postcontent" id="postcontent987654326">
+                            <div class="ubbcode">
+                                前排提醒：本期的成就「不动如山」要求在护盾反弹前不移动，记得单独打一遍。<br />
+                                参考 <a href="/read.php?tid=7654321">上期的成就攻略</a>
+                                <div class="postInfo"><span class="postdate">2026-09-14 14:05</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos"><span class="recommendvalue">+3</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="postrow" id="post987654327">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654327">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=31112233">数据党</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postcontent" id="postcontent987654327">
+                            <div class="ubbcode">
+                                补一组实测数据（20 次取平均）：<br />
+                                双雷 + 护盾 平均 62 秒；雷火超载 平均 58 秒；单雷单水 平均 55 秒。<br />
+                                差的不多，选顺手的就行。
+                                <div class="postInfo"><span class="postdate">2026-09-14 14:40</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos"><span class="recommendvalue">+55</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="postrow" id="post987654328">
+                <tr>
+                    <td class="c1 postauthor" id="postauthor987654328">
+                        <div class="posterinfo"><a class="userlink" href="/nuke.php?func=ucp&uid=31778899">潜水员</a></div>
+                    </td>
+                    <td class="c2">
+                        <div class="postcontent" id="postcontent987654328">
+                            <div class="ubbcode">
+                                留名，下周练度起来了再来抄作业。
+                                <div class="postInfo"><span class="postdate">2026-09-14 15:12</span></div>
+                            </div>
+                        </div>
+                        <div class="postBtnPos"><span class="recommendvalue">0</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="pagination">
+                <a href="/read.php?tid=1234567&page=1">1</a>
+                <a href="/read.php?tid=1234567&page=2">2</a>
+                <a href="/read.php?tid=1234567&page=3">3</a>
+                <a href="/read.php?tid=1234567&page=9">9</a>
+                <a href="/read.php?tid=1234567&page=2">下一页</a>
+            </div>
+        </div>
+
+        <script type="module" src="/dev/harness-boot.js"></script>
+    </body>
+</html>
