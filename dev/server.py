@@ -25,6 +25,12 @@ MAPPING = {
     "/read.php": "dev/fixtures/thread.html",
 }
 
+# 带查询参数的覆盖映射：(路径, 查询里必须出现的键) -> 样例页面
+QUERY_MAPPING = [
+    ("/read.php", "blocked", "dev/fixtures/blocked.html"),
+    ("/thread.php", "blocked", "dev/fixtures/blocked.html"),
+]
+
 # 资源前缀 → 真实目录（扩展的代码在 extension/ 下，样例页面按扩展内的路径引用）
 PREFIXES = [
     ("/src/", "extension/src/"),
@@ -37,14 +43,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def do_GET(self):  # noqa: N802
-        path = urllib.parse.urlparse(self.path).path
-        if path in MAPPING:
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        if path in MAPPING and not any(
+            path == target and key in parsed.query for target, key, _ in QUERY_MAPPING
+        ):
             self.path = "/" + MAPPING[path]
         else:
-            for prefix, target in PREFIXES:
-                if path.startswith(prefix):
-                    self.path = "/" + target + path[len(prefix) :]
+            for target, key, fixture in QUERY_MAPPING:
+                if path == target and key in parsed.query:
+                    self.path = "/" + fixture
                     break
+            else:
+                for prefix, dest in PREFIXES:
+                    if path.startswith(prefix):
+                        self.path = "/" + dest + path[len(prefix) :]
+                        break
         super().do_GET()
 
     def end_headers(self):
@@ -59,4 +73,5 @@ if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer(("127.0.0.1", PORT), Handler) as httpd:
         print(f"dev server → http://127.0.0.1:{PORT}/  (fixtures: {', '.join(MAPPING)})")
+        print(f"错误页样例 → http://127.0.0.1:{PORT}/read.php?tid=1&blocked=1")
         httpd.serve_forever()

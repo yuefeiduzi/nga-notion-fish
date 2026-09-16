@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <title>访客不能直接访问</title>
+        <link rel="stylesheet" href="/src/styles/boot.css" />
+        <link rel="stylesheet" href="/src/styles/app.css" />
+    </head>
+    <body>
+        <!-- 本地调试样例：模仿 NGA 拒绝访客时的错误页（ERROR:15），用来测兜底界面 -->
+        <div id="mmc">
+            <div class="error-page">
+                <h1>(ERROR:15) &gt; 加载中 请稍候 …</h1>
+                <p>如不能自动跳转 可点此链接</p>
+                <p>&gt; 你可能需要 <a href="/nuke.php?func=ucp_login">登录</a> 后访问 ...</p>
+                <p>&gt; 后退 ...</p>
+                <p>&gt; 返回首页 ...</p>
+                <p>&gt; https://ngabbs.com/read.php?tid=1234567</p>
+            </div>
+        </div>
+        <script type="module" src="/dev/harness-boot.js"></script>
+    </body>
+</html>

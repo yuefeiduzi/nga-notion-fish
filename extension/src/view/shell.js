@@ -5,6 +5,7 @@
  */
 
 import { el, append, icon, origin } from '../core/dom.js';
+import { copyDiagnostics } from '../core/diagnose.js';
 
 export function createShell(ctx) {
     const root = el('div', { id: 'ngr-root' });
@@ -161,6 +162,17 @@ export function createShell(ctx) {
                 active: settingsNow.stealth,
                 title: '开启后标签页标题变得人畜无害，连按两下 Esc 可立刻切到假页面',
                 onclick: () => ctx.toggleStealth(),
+            })
+        );
+        foot.appendChild(
+            sideLink({
+                iconName: 'link',
+                label: '复制诊断信息',
+                title: '解析不对时点这里，把现场复制给开发者',
+                onclick: async () => {
+                    const { ok } = await copyDiagnostics();
+                    ctx.toast(ok ? '诊断信息已复制' : '诊断信息已生成');
+                },
             })
         );
         foot.appendChild(sideLink({ iconName: 'refresh', label: '退出阅读模式', onclick: () => ctx.disable() }));

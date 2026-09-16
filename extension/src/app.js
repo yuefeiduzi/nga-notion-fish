@@ -12,6 +12,7 @@ import { renderBoard } from './view/board.js';
 import { renderThread } from './view/thread.js';
 import { createShell } from './view/shell.js';
 import { button, notice } from './view/parts.js';
+import { copyDiagnostics } from './core/diagnose.js';
 import { revealAllImages } from './nga/sanitize.js';
 import {
     getSettings,
@@ -178,6 +179,18 @@ function buildPage(model) {
     }
 }
 
+/** 「复制诊断信息」按钮：真机上解析失败时用它把现场发回来 */
+function diagnoseButton() {
+    return button('复制诊断', {
+        icon: 'link',
+        title: '把这页的解析现场复制到剪贴板，方便排查/反馈',
+        onclick: async () => {
+            const { ok } = await copyDiagnostics();
+            state.shell.toast(ok ? '诊断信息已复制' : '诊断信息已生成');
+        },
+    });
+}
+
 function blockedPage(model) {
     const wrap = document.createElement('div');
     wrap.className = 'ngr-page';
@@ -196,6 +209,7 @@ function blockedPage(model) {
     );
     actions.appendChild(button('重新加载', { icon: 'refresh', onclick: () => location.reload() }));
     actions.appendChild(button('以原站方式打开', { onclick: () => openOriginal(model.url) }));
+    actions.appendChild(diagnoseButton());
     wrap.appendChild(actions);
     return wrap;
 }
@@ -208,6 +222,7 @@ function unknownPage(model) {
     actions.className = 'ngr-head-actions';
     actions.appendChild(button('以原站方式打开', { onclick: () => openOriginal(model.url) }));
     actions.appendChild(button('回到首页', { onclick: () => navigate(origin()) }));
+    actions.appendChild(diagnoseButton());
     wrap.appendChild(actions);
     return wrap;
 }
