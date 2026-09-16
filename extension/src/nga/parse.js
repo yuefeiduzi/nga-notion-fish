@@ -42,18 +42,26 @@ const SEL = {
     homeGroupTitle: ['.catetitle', ':scope > h2', ':scope > .cate_title', ':scope > strong'],
     navLinks: ['.nav_link', '.nav a.nav_link', '.nav_root', '#nav a', '.nav a'],
 
-    // 帖子列表页（thread.php）
-    boardTable: ['#topicrows', 'table.forumbox', '#threadlist table', '.forumbox'],
-    boardRow: ['tr.topicrow', '#topicrows > tbody > tr', '#topicrows tr', 'table.forumbox tbody tr', '.topicrow'],
+    // 帖子列表页（thread.php）：行确认为 .topicrow（NGA优化摸鱼体验 的 renderThreads 就是遍历 .topicrow）
+    boardTable: ['#m_threads', '#topicrows', 'table.forumbox', '#threadlist table', '.forumbox'],
+    boardRow: [
+        '#m_threads .topicrow',
+        'tr.topicrow',
+        '#topicrows > tbody > tr',
+        '#topicrows tr',
+        'table.forumbox tbody tr',
+        '.topicrow',
+    ],
     boardTitle: ['td.c2 a.topic', 'a.topic', 'td.c2 a[href*="read.php"]', 'a[href*="read.php?tid="]'],
     boardTag: ['td.c2 span[class^="t_k_"]', 'span[class^="t_k_"]', '.topic_tag', '.topic_tag_normal'],
     boardAuthor: ['td.c3 a.author', 'a.author', 'td.c3 a[href*="uid="]', 'a[href*="uid="]'],
     boardDate: ['td.c3 span.postdate', 'span.silver.postdate', '.postdate', 'td.c3 time'],
     boardStats: ['td.c4', '.replies', '.reply_count'],
 
-    // 帖子页（read.php）
+    // 帖子页（read.php）：一层楼 = 一个 .forumbox.postbox，行上是 .postrow
     postRow: [
         '#m_posts_c > table.postbox',
+        '#m_posts .postrow',
         'table.postbox',
         '.forumbox.postbox',
         '[id^="post1strow"]',

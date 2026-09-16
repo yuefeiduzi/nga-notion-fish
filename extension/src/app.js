@@ -5,7 +5,7 @@
  * 这一层不做任何 DOM 解析（在 nga/parse.js）也不做任何排版（在 view/）。
  */
 
-import { parsePage, routeKind, PAGE } from './nga/parse.js';
+import { parsePage, routeKind, detectBlocked, PAGE } from './nga/parse.js';
 import { loadDocument } from './nga/fetch.js';
 import { renderHome } from './view/home.js';
 import { renderBoard } from './view/board.js';
@@ -75,6 +75,7 @@ export async function start(settings) {
     }
 
     // 首次渲染直接用当前页面的 DOM，不额外发请求
+    await waitForTarget(kind);
     const model = await parseLive(location.href);
     render(model, { push: false, useLive: true });
 
@@ -89,9 +90,39 @@ function whenDomReady() {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** 各类页面「内容已就绪」的标志物 */
+const READY_SELECTORS = {
+    [PAGE.HOME]: '.catenew, a[href*="fid="]',
+    [PAGE.BOARD]: '#m_threads .topicrow, .topicrow, #topicrows tr',
+    [PAGE.THREAD]: '#m_posts .postrow, .forumbox.postbox, [id^="postcontent"]',
+};
+
 /**
- * 解析当前文档；NGA 有些内容是 DOMContentLoaded 之后才注入的，
- * 所以没解析出内容时短暂重试几次，最后才认输。
+ * 等原站把内容渲染出来。
+ * NGA 的楼层/列表有一部分是 DOMContentLoaded 之后由它的 JS 插进来的
+ * （参照 NGA优化摸鱼体验 的做法：它会等 .small_colored_text_btn 出现再渲染），
+ * 所以不能一到 DOMContentLoaded 就解析。
+ */
+function waitForTarget(kind, timeout = 3000) {
+    const selector = READY_SELECTORS[kind];
+    if (!selector || document.querySelector(selector)) return Promise.resolve(false);
+
+    return new Promise((resolve) => {
+        const started = Date.now();
+        const timer = setInterval(() => {
+            const ready = Boolean(document.querySelector(selector));
+            const blocked = Boolean(detectBlocked(document));
+            const expired = Date.now() - started > timeout;
+            if (ready || blocked || expired) {
+                clearInterval(timer);
+                resolve(blocked);
+            }
+        }, 120);
+    });
+}
+
+/**
+ * 解析当前文档。等过就绪信号之后偶尔还会差一点，所以再短重试几次才认输。
  */
 async function parseLive(url, attempts = 5, delay = 400) {
     let model = parsePage(document, url);

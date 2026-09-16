@@ -78,13 +78,37 @@
 
 ## 5. 已知坑
 
+- **内容可能是异步渲染的**：`NGA优化摸鱼体验` 的 `renderForms()` 会先检查
+  `$el.find('.small_colored_text_btn').length == 0` 并 return，注释写的是「等待 NGA 页面渲染完成」——
+  也就是说到了 `DOMContentLoaded` 时楼层表格可能还不完整。扩展里对应的是
+  `app.js` 的 `waitForTarget()`（等 `#m_posts .postrow` / `.forumbox.postbox` / `.topicrow`，最多 3s）。
 - 访客直接访问：`(ERROR:15) 访客不能直接访问`；未登录：标题「未登录」+ `(ERROR:1)`。
 - 登录入口：`nuke.php?func=ucp_login`。
 - 老页面可能是 **GBK**（老脚本用 `readAsText(blob, 'gbk')` 读 AJAX 结果），新页面是 UTF-8。
 - 楼层 id 用的是「页内序号」（`postcontent0`、`postcontent1`…），**不是 pid**，
   不要把 id 里的数字当 pid 用；pid 从 `commonui.postArg.data[i].pid` 或行上的 `data-pid` 取。
+- 外部环境：GitHub API（未登录 403）、searchcode / archive.org（大量 429）都容易限流，
+  抓源码优先走 GreasyFork 的 `update.greasyfork.org`。
 
-## 6. 证据来源（GreasyFork 脚本源码）
+## 6. 证据来源
+
+**① `NGA优化摸鱼体验`（GreasyFork 393991，264KB，最权威的一个）** ——
+直接下 `https://update.greasyfork.org/scripts/393991/NGA%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C.user.js`，
+搜 `renderThreads` / `renderForms` / `#m_posts` 即可验证下面每一条：
+
+| 结论 | 出处 |
+| --- | --- |
+| 列表页行 = `.topicrow` | `renderThreads(){ $('.topicrow[hld-threads-render!=ok]') … }` |
+| 楼层容器 = `.forumbox.postbox` | `renderForms(){ $('.forumbox.postbox[hld-forms-render!=ok]') … }` |
+| 页面类型标志 | `#m_threads`（列表页）/ `#m_posts`（帖子页）/ `#m_nav`（面包屑容器 `#m_nav a.nav_link`） |
+| 楼层行 = `#m_posts .postrow` | 深色模式 CSS：`#m_posts .postrow .posterInfoLine` |
+| 作者头像 | `.posterinfo .avatar+img`（`.avatar` 后面那个 img） |
+| 列表页时间列 | `.topicrow .postdate` / `.topicrow .replydate`（最后回复） |
+| 附件 | 「附件」按钮的下一个元素 id 含 `postattach` |
+| 站点 API | `unsafeWindow.commonui.userInfo.users[uid]`、`commonui.mainMenu.menuOpen()`、`commonui.favor(e, null, tid)` |
+| 异步渲染 | `renderForms()` 等到 `.small_colored_text_btn` 出现才处理 |
+
+**② 其它 GreasyFork 脚本**（在各自页面里搜 `postArg` / `post1strow` / `recommendvalue` 可见）：
 
 | 脚本 | 用到的证据 |
 | --- | --- |
@@ -98,3 +122,7 @@
 
 复现方式（需要代理）：在 GreasyFork 脚本页拿 `update.greasyfork.org/scripts/<id>/<name>.user.js`，
 再用 `grep -nE "postArg|post1strow|postcontent|recommendvalue|forumbox|topicrow"` 挖选择器。
+
+> 没拿到的东西：真实登录态下的 `read.php` 快照。NGA 对访客返回 ERROR:15，
+> Wayback 抓到的也是错误页，所以「`.recommendvalue` 具体长什么样」「图片懒加载属性到底是哪个」
+> 这类问题仍需在登录态下实测（headless Chrome 跟访客挑战会挂住，别用）。
