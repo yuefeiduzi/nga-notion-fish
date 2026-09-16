@@ -834,6 +834,12 @@
     text-decoration-color: currentColor;
 }
 
+.ngr-content .ngr-content-empty {
+    color: var(--ng-text-2);
+    font-size: 14px;
+    font-style: italic;
+}
+
 .ngr-content img {
     display: block;
     max-width: 100%;
