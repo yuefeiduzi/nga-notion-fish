@@ -6,7 +6,7 @@
 > 复现方法：Chrome 登录 NGA → 打开目标页 → DevTools Console 里跑
 > `document.querySelectorAll(...)`；或者用 `?ngr=off` 跳过本扩展接管后再看原站 DOM。
 
-## 0. 三条会影响架构的实测结论（最重要）
+## 0. 四条会影响架构的实测结论（最重要）
 
 1. **正文是 JS 注入的，fetch 回来的 HTML 里没有内容** ✅
    - `/`（首页）：服务端 HTML 15KB，里面 **0 个 `.catenew`**（渲染后才 13 个）。
@@ -18,6 +18,13 @@
    （表现：`body.innerText` 为空、`#ngr-root` 在但没内容）。
 3. **NGA 的渲染是异步且分阶段的** ✅ 行/容器先出现、正文元素后出现，
    `commonui.postArg` 比楼层行更晚。所以解析前必须等信号（见 §3 的就绪判据）。
+4. **接管后原站 JS 还会动手改我们克隆出来的图** ✅
+   - 现象：正文里那张 1024×470 的图被写上 `style="max-width:982.4px; max-height:none; outline:rgb(230,195,168) 5px solid"`
+     （数字随视口变，实测 982~1030），而正文栏只有 676px ⇒ 图比正文宽出一大截。
+   - 出处：`ubbcode.adjImgSize` / `ubbcode.imgError`（`common_res/js_bbscode_core.js`）里的
+     `var aw = this.getAvilWidth(o); o.style.maxWidth = aw+'px'`：宽度按**原站自己的布局**算，不是我们的容器。
+   - 对策两条一起用：① 克隆图上把原站的图片钩子（`data-argi` / `data-nw` / `data-srcorg` …）摘干净（`sanitize.js`）；
+     ② `app.css` 里图片的宽高规则全部 `!important`（内联样式只能这么压）。
 
 ## 1. 帖子页 read.php ✅
 
@@ -62,8 +69,9 @@
 | 签名 | `div#postsign{N}.postsignC > span.sigline + div#postsigncontent{N}.sign.ubbcode` | 整块删掉 |
 | 贴条 | `.comment_c_1` / `.comment_c_2` | 整块删掉 |
 | 附件 | `h4.postbodysubtitle`（「附件」）+ `#postattach{N}` 里的 `a.contentFullWidthButton` | 都删；真正的附件图已在正文里 |
-| 图片（懒加载） | `img[src="about:blank"]`，真地址要滚动才填进 `src` | 宿主是 `img.nga.cn`；属性有 `data-argi` / `data-srcorg` / `data-iw` / `data-ih` |
-| 小表情 | `img` 且 `class` 含 smilie 或尺寸 ≤28 | 行内保留 |
+| 图片（懒加载） | `img[src="about:blank"]`，真地址要滚动才填进 `src` | 宿主是 `img.nga.cn`；属性有 `data-argi` / `data-srcorg` / `data-srclazy` / `data-iw` / `data-ih` |
+| 图片会被原站 JS 改写 | 接管后图片上仍会出现内联 `max-width:982px`（视口 1512 时实测；另有 `min-width` / `outline: <主题色> 5px`） | 出处：`ubbcode.adjImgSize` / `ubbcode.imgError`（`common_res/js_bbscode_core.js`），宽度按**原站自己的布局**算，不是我们的正文栏 ⇒ 排版规则必须 `!important` |
+| 小表情 | `img` 且 `class` 含 `smile`，或地址含 `/post/smile/` | 出处：`js_bbscode_core.js` 里 `[s:ac:11]` → `<img class='smile_ac' src='…/post/smile/ac11.png' alt='咦'/>`；**没有 data-* 尺寸**，原图 69×60（`a2_02.png` / `ac11.png` 实测）；老页面还有 `.gif` / `smilie` 写法 |
 | 面包屑 | `.nav_root` → `.nav_spr` → `.nav_link`（末级是帖子标题） | |
 | 翻页 | `[name="pageball"]` + `commonui.pageBtn()` 渲染；链接带 `page=` | |
 

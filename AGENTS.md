@@ -77,6 +77,9 @@ extension/
 - **幂等**：同一页会因「设置变更 / 自愈重渲染」被重复渲染，且跳转后 content script 会重新跑一遍；
   事件挂在文档级或渲染时重建的节点上，不要往 `window` 上反复绑定。
 - **样式必须能压住原站**：内容区的排版规则写在 `.ngr-content` 下，并显式重置 `div/span/font` 的继承属性；设计 token 用 `--ng-` 前缀，避免与原站变量撞名。
+- **图片的宽高规则必须 `!important`**：接管后原站 JS（`ubbcode.adjImgSize`）仍会给我们的图片副本写内联
+  `max-width:<它自己布局的宽度>px`（实测 982~1030px，正文栏才 676px）。同理，克隆图上要把原站的图片钩子
+  （`data-argi`/`data-nw`/`data-srcorg`/`data-srclazy`…）摘干净，见 `sanitize.js` 的 `IMAGE_HOOK_ATTRS`。
 - 不引入依赖、不引入构建步骤、不发起与原站无关的网络请求。
 
 ## 常用 DOM 选择器（实测确认，详见 `dev/nga-dom-notes.md`）
@@ -91,6 +94,9 @@ extension/
   `#postcontentandsubject{N}`**）；时间 `span#postdate{N}`；标题 `h3#postsubject{N}`
 - 正文里：`.quote`、`.collapse_btn` + `.collapse_content`（内容默认空）、`[id^="postsign"]`（签名，删）、
   `.comment_c_{1,2}`（贴条，删）、`#postattach`（附件按钮，删）
+- 正文里的图：`img`（**表情与正式图片靠 `class` 含 `smile` 或地址含 `/post/smile/` 区分**：
+  `[s:ac:11]` → `<img class="smile_ac" src="https://img4.nga.cn/ngabbs/post/smile/ac11.png" alt="咦">`，
+  没有尺寸属性、原图 69×60 —— 所以不能只靠「小尺寸」判断）
 - 分页：`[name="pageball"]` / `#pagebar a` / `a[href*="page="]`
 
 ### 两条取数路径（重要）

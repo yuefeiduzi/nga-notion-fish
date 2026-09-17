@@ -45,6 +45,9 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 发帖时间的真实位置（`#postdate{N}` 还是 `.postInfo`）、赞同数形态（`.recommendvalue` 里面到底有没有 `+`）、
 图片懒加载属性（`data-src` / `file=`）。
 
+> 2026-09 更新：图片那一条已经清楚了——真凶不是属性名，是原站 JS 会往接管后的图
+> 写内联 `max-width`（见 `dev/nga-dom-notes.md` §0.4）；表情也不能按「小尺寸」判，要看 `class`/地址。
+
 ## 已完成 ✓
 
 ### 架构（v0.3，Chrome 扩展）
@@ -71,8 +74,9 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 ### 内容保真
 - [x] 引用块（含嵌套引用）转 `<blockquote>` 并保留作者/时间/链接
 - [x] 折叠块 `[collapse]` → `<details>`
-- [x] 表格、代码块、列表、表情（小图行内保留）
-- [x] 懒加载图片 `data-src` 还原、外链 `target=_blank`、内联脚本/样式/广告/签名过滤
+- [x] 表格、代码块、列表
+- [x] 表情单独识别（`class` 含 `smile` / 地址含 `/post/smile/`）：按原图大小行内排、不进预览、无图模式下也照常显示
+- [x] 懒加载图片 `data-src` / `data-srclazy` 还原、外链 `target=_blank`、内联脚本/样式/广告/签名过滤
 
 ## 待办
 
@@ -88,6 +92,8 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 - [x] 图片懒加载：`nga/lazy-images.js` —— 临时把原站切成「有布局但看不见」+ 逐张 `scrollIntoView`
       催 NGA 写 `src`，然后重渲染；图片模式下渲染完会自动催一次
 - [x] 图片框限高（70vh）+ 点击全屏预览（缩放/拖动/←→切换/Esc）+ 1px 装饰图过滤
+- [x] 大图宽度：原站 JS（`ubbcode.adjImgSize`）会给我们克隆的图写内联 `max-width:982px`（比正文栏宽 300px），
+      已用「图片规则 `!important` + 摘掉克隆图上的原站 `data-*` 钩子」压住；fixture 里加了同名模拟作回归
 - [ ] 楼层号：目前按 20 楼/页推算，还没在第 N 页上核对过
 - [ ] `postBtnPos` 里的赞踩按钮是 JS 后填的，真机上常为空（赞数改用站点数据 `recommend`）
 - [ ] 引用块里的图拿不到地址（原站把它裁掉了），现在是「点击加载」占位点了没反应
