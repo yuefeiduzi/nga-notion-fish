@@ -276,6 +276,8 @@ export function routeKind(url) {
         return PAGE.UNKNOWN;
     }
     const path = parsed.pathname.replace(/\/+$/, '') || '/';
+    // 演示页（extension/demo/index.html，给商店审核员看用）：路径不是 NGA 的，但要用帖子页那套渲染
+    if (path.endsWith('/demo/index.html')) return PAGE.THREAD;
     if (path === '/' || path === '/index.php') return PAGE.HOME;
     if (/\/thread\.php$/.test(path)) return PAGE.BOARD;
     if (/\/read\.php$/.test(path)) return PAGE.THREAD;

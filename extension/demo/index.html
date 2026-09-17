@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>[演示] 12 层满星配队与轴表整理 - NGA玩家社区</title>
+        <!--
+          演示页（给商店审核员、以及没登录 NGA 的人看）：
+          下面这段 HTML 照抄真实 read.php 的层级与类名（出处见 dev/fixtures/thread.html
+          与 dev/nga-dom-notes.md），渲染走的是与 NGA 上完全相同的代码路径：
+          demo-boot.js → app.js → nga/parse.js → nga/sanitize.js → view/thread.js。
+          数据是本地示例，不是真实站点内容；示例图/表情在同目录下。
+          正文元素照真机用 <span class="postcontent ubbcode">（dev/fixtures/thread.html 用的是 <p>，
+          两种都要能解析；静态 HTML 里往 <p> 塞 <div> 会被浏览器拆开，所以这里用 span）。
+        -->
+        <link rel="stylesheet" href="../src/styles/boot.css" />
+        <link rel="stylesheet" href="../src/styles/app.css" />
+        <link rel="stylesheet" href="demo.css" />
+    </head>
+    <body>
+        <div id="mmc">
+            <div class="nav">
+                <a class="nav_root" href="/">NGA</a>
+                <span class="nav_spr">-</span>
+                <a class="nav_link" href="/thread.php?fid=-7">游戏综合讨论</a>
+                <span class="nav_spr">-</span>
+                <a class="nav_link" href="/read.php?tid=1">[演示] 12 层满星配队与轴表整理</a>
+            </div>
+
+            <div id="m_posts" class="module_wrap">
+                <div id="m_posts_c" class="w100">
+                    <table class="forumbox postbox" cellspacing="1px">
+                        <tbody>
+                            <tr id="post1strow0" class="postrow row2">
+                                <td class="c1">
+                                    <span id="posterinfo0" class="posterinfo">
+                                        <a id="postauthor0" class="userlink author" href="/nuke.php?func=ucp&amp;uid=33123456"><b class="block_txt">猫猫头实验体</b></a>
+                                    </span>
+                                </td>
+                                <td id="postcontainer0" class="c2">
+                                    <h3 id="postsubject0">[演示] 12 层满星配队与轴表整理（9 月版本）</h3>
+                                    <span id="postcontent0" class="postcontent ubbcode">
+                                        这次深渊 12 层换了新的机制，上半的护盾是反击型，所以**不要**带高频普攻角色。<br /><br />
+                                        <div class="quote">
+                                            <b>Post by 隔壁老王 (2026-09-12 09:12):</b><br />12 层是不是不打满也能拿完奖励？
+                                        </div>
+                                        回答上面的问题：能，但会少 150 原石，看你在不在意。<br /><br />
+                                        轴表（上半）：
+                                        <table border="1" cellspacing="0">
+                                            <tr>
+                                                <th>时间</th>
+                                                <th>动作</th>
+                                                <th>备注</th>
+                                            </tr>
+                                            <tr>
+                                                <td>0s</td>
+                                                <td>开 E 吃球</td>
+                                                <td>必须站桩 1 秒</td>
+                                            </tr>
+                                            <tr>
+                                                <td>6s</td>
+                                                <td>切人开大</td>
+                                                <td>注意打断</td>
+                                            </tr>
+                                        </table>
+                                        <br />
+                                        走位示意图（默认不加载，点侧边栏「显示图片」才会去取）：
+                                        <img src="shot.png" alt="走位示意图" />
+                                        <br />
+                                        表情（无图模式下也会显示，因为它是文字的一部分）：
+                                        <img class="smile_ac" src="smile.png" alt="咦" />
+                                        <br />
+                                        <div class="collapse_btn"><button type="button" name="collapseSwitchButton">+</button> 展开：下半具体循环</div>
+                                        <div class="collapse_content"></div>
+                                        <br />
+                                        循环代码：
+                                        <pre><code>for (int i = 0; i &lt; 2; i++) {
+    castSkill("E");
+}</code></pre>
+                                    </span>
+                                    <div id="postInfo0" class="postInfo">
+                                        <span id="postdate0" class="postinfot postdatec">2026-09-14 12:33</span>
+                                        <span class="recommendvalue">128</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="postrow row1">
+                                <td class="c1">
+                                    <span id="posterinfo1" class="posterinfo">
+                                        <a id="postauthor1" class="userlink author" href="/nuke.php?func=ucp&amp;uid=33123457"><b class="block_txt">隔壁老王</b></a>
+                                    </span>
+                                </td>
+                                <td id="postcontainer1" class="c2">
+                                    <h3 id="postsubject1">Re：[演示] 12 层满星配队与轴表整理</h3>
+                                    <span id="postcontent1" class="postcontent ubbcode">
+                                        感谢整理，按这个轴打了两遍就满了。<br /><br />
+                                        <div class="quote">
+                                            <b>Post by 猫猫头实验体 (2026-09-14 12:33):</b><br />
+                                            <div class="quote"><b>Post by 隔壁老王 (2026-09-12 09:12):</b><br />12 层是不是不打满也能拿完奖励？</div>
+                                            嵌套引用测试
+                                        </div>
+                                        总之还是看自己的队伍池，别硬抄。
+                                    </span>
+                                    <div id="postInfo1" class="postInfo">
+                                        <span id="postdate1" class="postinfot postdatec">2026-09-14 12:41</span>
+                                        <span class="recommendvalue">42</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="demo-boot.js"></script>
+    </body>
+</html>
