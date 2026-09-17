@@ -91,6 +91,33 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 
 ## 待办
 
+### 上架（Chrome Web Store / Edge Add-ons）
+
+仓库侧还缺的（都还没做）：
+
+- [ ] 图标：`extension/icons/{16,32,48,128}.png` + manifest 的 `icons` 与 `action.default_icon`
+      （沿用现在伪装 favicon 那枚青色「R」方块；**别用 NGA 官方图**，避免商标/冒充问题）
+- [ ] `LICENSE`（README 写的是 MIT，但仓库里没有文件）
+- [ ] `PRIVACY.md` + 一个公开 URL（隐私政策字段要填；GitHub blob / Pages 都行）
+- [ ] manifest 补 `homepage_url`；`web_accessible_resources` 收窄 —— 现在是 `src/**/*` 整目录，
+      实际只有 `boot.js` 动态 import 的那几个 `.js` 需要（被 WAR 摊得越宽，审核越容易问）
+- [ ] 打包脚本：zip 内容 = `extension/` 下的文件，`manifest.json` 在根目录
+- [ ] 商店素材：1280×800 截图 ×1~5（Chrome 要 ≥1）、440×280 小图（两家都要）、
+      300×300 logo（Edge）、1400×560 marquee（可选，想上精选才要）
+- [ ] 上架文案：单用途说明、`storage` 与两个域名 host 权限的理由、数据披露口径
+      （只在本机存设置/收藏/最近浏览，不外传，不统计）、无远程代码声明
+- [ ] 让审核员看得到内容：NGA 未登录只会显示引导页 ⇒ CWS 的 **Test instructions** 里写清楚，
+      或者随包附一个 demo 页（`extension/demo/`）让审核员不用 NGA 账号也能看到阅读界面
+- [ ] 命名风险："NGA" 是第三方商标 ⇒ 描述里写明非官方、自绘图标，别暗示与官方有关系
+
+平台侧（得账号本人操作，不是代码）：
+
+- **Chrome**：开发者注册一次性 $5；Google 账号必须开两步验证；填 Trader/Non-Trader
+  （EU DSA 要求，免费无内购一般选 Non-Trader，选了 Trader 会公开姓名地址）
+- **Edge**：Partner Center 免费注册；注意注册时填的开发者名 / 网站 / 支持联系方式**会公示**在商品页
+- 审核时长：Chrome 常见几天到两周（提交量大时更久）；Edge 最长 7 个工作日
+- 改版就失效的风险照旧：NGA 改结构后解析会错，上架后要准备及时发版本
+
 ### 内容与解析
 - [ ] 楼层号：目前按 20 楼/页推算，还没在第 N 页（非首页）上核对过
 - [ ] `postBtnPos` 里的赞踩按钮是 JS 后填的，真机上常为空（赞数改用站点数据 `recommend`）
