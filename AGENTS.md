@@ -4,11 +4,11 @@ Guidance for AI agents working in this repo.
 
 ## 项目概览
 
-一个零构建的 Chrome MV3 扩展：把 NGA 论坛（ngabbs.com / bbs.nga.cn）渲染成类似 [aihot.news](https://aihot.news/daily) 日报的阅读界面，方便上班时低调地看帖子。
+一个零构建的 Chrome MV3 扩展「NGA 阅读器」：把 NGA 论坛（ngabbs.com / bbs.nga.cn）渲染成类似 [aihot.news](https://aihot.news/daily) 日报的阅读界面，方便上班时低调地看帖子。
 
 - 主代码：`extension/`（无构建工具、无依赖、无打包，原生 ESM 动态 import）
-- 旧版：`legacy/nga-notion.user.js`（Tampermonkey 用户脚本，已被扩展取代，仅作参考）
-- 本地调试：`dev/`（结构仿真的假 NGA 页面 + 静态服务器）
+- 本地调试：`dev/`（结构仿真的假 NGA 页面 + 静态服务器 + 真实结构笔记 + 第三方脚本索引）
+- 历史：最初的 Tampermonkey 用户脚本已从仓库移除，需要时看 git 历史（`git log --all -- legacy/`）
 
 ## 开发方式
 
@@ -29,12 +29,11 @@ python3 dev/server.py 8765     # 然后打开 http://127.0.0.1:8765/read.php?tid
 | 文件 | 写给谁 | 放什么 |
 | --- | --- | --- |
 | `README.md` | 用户 | 装与用、特性、出问题怎么办、已知限制 |
-| `TODO.md` | 人 | **进度与下一步**（顶部是真机验收清单）、待办、技术笔记 |
+| `TODO.md` | 人 | **进度与下一步**（顶部是「现在这一步」与快速自检表）、待办、技术笔记 |
 | `AGENTS.md` | AI | 架构约定、分层职责、选择器入口、踩过的坑 |
 | `dev/README.md` | 人 | 样例页怎么跑、fixtures 的规矩 |
 | `dev/nga-dom-notes.md` | 人 | NGA 真实结构与出处（改解析必看） |
 | `dev/reference/README.md` | 人 | 第三方脚本索引（不参与构建） |
-| `legacy/` | 无 | 旧用户脚本存档，只做参考，不要以它为准 |
 
 状态类内容写在 `TODO.md`，不要散落在其它文档里。
 
@@ -76,6 +75,8 @@ extension/
 - **`sanitize.js` 的处理顺序不能改**：`convertQuotes/convertCollapse` 必须在 `scrubAttributes` 之前，否则 `.quote` / `.collapse` 类名会被洗掉。
 - **幂等**：同一页会因「设置变更 / 自愈重渲染」被重复渲染，且跳转后 content script 会重新跑一遍；
   事件挂在文档级或渲染时重建的节点上，不要往 `window` 上反复绑定。
+- **两个“名字”别搞混**：侧边栏品牌名是 `view/shell.js` 里的常量 `BRAND`（NGA 阅读器）；
+  设置里的 `brandText` 只管应急伪装时的标签页标题（标题文案由 popup 里的「标签页标题」控制）。
 - **样式必须能压住原站**：内容区的排版规则写在 `.ngr-content` 下，并显式重置 `div/span/font` 的继承属性；设计 token 用 `--ng-` 前缀，避免与原站变量撞名。
 - **图片的宽高规则必须 `!important`**：接管后原站 JS（`ubbcode.adjImgSize`）仍会给我们的图片副本写内联
   `max-width:<它自己布局的宽度>px`（实测 982~1030px，正文栏才 676px）。同理，克隆图上要把原站的图片钩子
