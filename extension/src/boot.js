@@ -15,20 +15,30 @@
 
     // 兜底：4 秒内没有完成接管，就还原成原站，避免白屏
     var failsafe = setTimeout(function () {
-        root.classList.remove('ngr-pending');
+        undo();
     }, 4000);
 
-    function restore() {
+    /** 成功接管之后：只掲掉「藏起来」的标记，应用本身要留着 */
+    function done() {
         clearTimeout(failsafe);
         root.classList.remove('ngr-pending');
-        // 万一已经在接管中途失败，也要把原站放出来
+    }
+
+    /**
+     * 失败 / 不接管：把页面还原成原站。
+     * 注意不能和 done() 合成一个函数 —— 之前就是因为在成功路径上调了这里，
+     * 把刚渲染好的 #ngr-root 又删了一次，表现为“一闪而过回到原站”。
+     */
+    function undo() {
+        clearTimeout(failsafe);
+        root.classList.remove('ngr-pending');
         root.classList.remove('ngr-active');
         var takeover = document.getElementById('ngr-root');
         if (takeover) takeover.remove();
     }
 
     if (!/^https?:$/.test(location.protocol)) {
-        restore();
+        undo();
         return;
     }
 
@@ -42,17 +52,17 @@
             var settings = await settingsModule.getSettings();
 
             if (!settings.enabled) {
-                restore();
+                undo();
                 return;
             }
 
             var appUrl = chrome.runtime.getURL('src/app.js');
             var app = await import(appUrl);
             await app.start(settings);
-            restore();
+            done();
         } catch (error) {
             console.error('[Reader] 启动失败', error);
-            restore();
+            undo();
         }
     })();
 })();

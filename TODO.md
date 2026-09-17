@@ -51,7 +51,8 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 - [x] 从 Tampermonkey 用户脚本迁移到 Chrome MV3 扩展（零构建、原生 ESM）
 - [x] 不再「原站上盖一层」：`document_start` 藏住原站，只把它当数据源
 - [x] 分层：`parse.js`（Document → 模型）/ `sanitize.js`（正文净化）/ `view/*`（渲染）/ `app.css`（设计 token）
-- [x] 站内跳转改为 `fetch + 自渲染`，无整页刷新、无原站加载闪烁
+- [x] 站内跳转：先做过 `fetch + 自渲染`，真机实测发现首页/帖子页正文是 JS 注入的，
+      已改回整页导航（原站仍被藏住，所以没有闪动）
 - [x] 失败兜底：解析失败/未登录/加载失败都有可操作的提示页，且能一键回原站
 - [x] 一键诊断：`extension/src/core/diagnose.js` 导出选择器命中数 + 抽取字段 + 首楼 HTML（侧边栏与兜底页都有入口）
 - [x] 不支持的页面（搜索/用户页等）保持原站，不接管
@@ -75,14 +76,21 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 
 ## 待办
 
-### 需要登录态核对（优先级最高）
-- [ ] 用真实 NGA 页面核对 `parse.js` 的两条取数路径（`commonui.postArg.data` / 选择器兜底）
-- [ ] 核对 `#postdate{N}` 是否每层楼都有、赞同数 `.recommendvalue` 的展示形态
-- [ ] 核对图片懒加载属性（`data-src` / `file=`）与附件框、`img.nga.178.com` 图床
-- [ ] 核对「只看楼主」`authorid=` 与分页真实上限（`__PAGE[1]` 的口径）
-- [ ] 核对列表页 `td.c4` 是「回复/浏览」还是反过来，`.replydate` 要不要展示成「最后回复」
-- [ ] 老页面 GBK 编码是否还会遇到（`fetch.js` 已做 charset 推断）
-- 参考：`dev/nga-dom-notes.md`（逐条出处）+ `dev/reference/`（8 个在维护的第三方脚本源码）
+### 真机核对（已完成 ✅，2026-09，登录态 Chrome）
+- [x] 首页 / 列表页 / 帖子页三类页面在真机上跑通（411 个板块、47 个主题、楼层正文与引用都正确）
+- [x] 站点数据两条路径：`commonui.postArg.data`（含 `postTime` unix / `recommend`）与选择器兜底
+- [x] 时间字段：`span#postdate{N}` + 站点数据 `postTime`；赞同数：站点数据 `recommend`
+- [x] 列表页列义：回复数在 `td.c1 a.replies`，`td.c4` 是最后回复（时间 + 人）
+- [x] GBK 编码确认（HTTP 头是 GBK）；错误页 `ERROR:5/15/1`
+- [x] 结论：fetch 拿不到首页/帖子页正文 → 已改回整页导航，删掉 `nga/fetch.js`
+
+### 真机发现、还没做的
+- [ ] 图片懒加载：NGA 是滚动才填 `src`，接管后原站不滚动 → 现在是「点原站查看」占位；
+      可以试试解析前临时给原站容器布局并滚动来唤醒它
+- [ ] 楼层号：目前按 20 楼/页推算，还没在第 N 页上核对过
+- [ ] `postBtnPos` 里的赞踩按钮是 JS 后填的，真机上常为空（赞数改用站点数据 `recommend`）
+- [ ] 贴条（`.comment_c_*`）目前整块丢弃，考虑做成"查看贴条"折叠
+- [ ] 折叠块 `.collapse_content` 内容为空（点击才去原站拉），现在是提示文案，可考虑做"展开即回原站"
 
 ### 体验
 - [ ] 楼层锚点跳转（`#pid` / 跳楼输入框）与「本页楼层目录」

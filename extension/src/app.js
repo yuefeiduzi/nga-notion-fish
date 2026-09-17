@@ -5,13 +5,12 @@
  * 这一层不做任何 DOM 解析（在 nga/parse.js）也不做任何排版（在 view/）。
  */
 
-import { parsePage, routeKind, detectBlocked, PAGE } from './nga/parse.js';
-import { loadDocument } from './nga/fetch.js';
+import { parsePage, routeKind, detectBlocked, cleanText, PAGE } from './nga/parse.js';
 import { renderHome } from './view/home.js';
 import { renderBoard } from './view/board.js';
 import { renderThread } from './view/thread.js';
 import { createShell } from './view/shell.js';
-import { button, notice } from './view/parts.js';
+import { button, notice, skeletonPage } from './view/parts.js';
 import { copyDiagnostics } from './core/diagnose.js';
 import { revealAllImages } from './nga/sanitize.js';
 import {
@@ -68,20 +67,63 @@ export async function start(settings) {
 
     state.shell = createShell(buildContext());
 
-    // 原站可以停止加载了：图片/脚本/样式都不需要
-    try {
-        window.stop();
-    } catch {
-        /* 忽略 */
-    }
+    // 先把壳和骨架屏画出来：NGA 的正文要等它自己的 JS 注入，
+    // 与其让用户盯着白屏，不如先让他们看到我们的界面（这里也是摘掉 ngr-pending 的时机）
+    showSkeleton();
 
-    // 首次渲染直接用当前页面的 DOM，不额外发请求
+    // 注意：这里千万不能 window.stop()。
+    // 实测（ngabbs.com 登录态）：首页与帖子页的正文都是 NGA 自己的 JS 后注入的，
+    // 提前掐掉加载会让页面永远停在空壳上（body.innerText 为空的“加载中”页）。
+    // 反正原站已经被 CSS 藏起来了，多下几张图不值得拿白屏去换。
+
+    // 等原站把内容渲染出来，再用当前页面的 DOM 解析（不额外发请求）
     await waitForTarget(kind);
     const model = await parseLive(location.href);
-    render(model, { push: false, useLive: true });
+    render(model);
+    selfHeal(kind);
 
     bindEvents();
     state.unsubscribe = onSettingsChanged(handleExternalSettingsChange);
+}
+
+/**
+ * 自愈：NGA 的渲染时序不稳定，偶尔会解析到「还没填内容的容器」。
+ * 表现为正文里混着 `#postsubject` 这类本该在外面的东西 —— 发现就隔一会儿重解析，
+ * 直到拿到干净的模型（最多试 8 次）。
+ */
+function selfHeal(kind, attempt = 0) {
+    if (kind !== PAGE.THREAD) return;
+    // 脏的标志：正文里又套了一个 #postcontent（说明抓到的是包装层/容器）
+    const dirty = state.shell.inner.querySelector('.ngr-content [id^="postcontent"]');
+    if (!dirty) return;
+    if (attempt > 8) return;
+
+    setTimeout(() => {
+        const model = parsePage(document, location.href);
+        const stillDirty =
+            model.kind !== PAGE.THREAD ||
+            model.posts.some(
+                (post) =>
+                    post.sourceEl &&
+                    post.sourceEl.querySelector &&
+                    post.sourceEl.querySelector('[id^="postcontent"]')
+            );
+
+        if (!stillDirty) {
+            console.debug('[Reader] 内容渲染未完成，免费重渲染一次');
+            render(model, { keepScroll: true });
+            return;
+        }
+        selfHeal(kind, attempt + 1);
+    }, 600);
+}
+
+/** 摘掉 ngr-pending 并先画骨架屏，避免用户盯着白屏等原站渲染 */
+function showSkeleton() {
+    document.documentElement.classList.remove('ngr-pending');
+    state.shell.inner.appendChild(skeletonPage());
+    state.shell.main.focus({ preventScroll: true });
+    applyTitle(null);
 }
 
 function whenDomReady() {
@@ -91,41 +133,88 @@ function whenDomReady() {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** 各类页面「内容已就绪」的标志物 */
+/** 各类页面「内容已就绪」的标志物（都是实测确认过的容器） */
 const READY_SELECTORS = {
     [PAGE.HOME]: '.catenew, a[href*="fid="]',
-    [PAGE.BOARD]: '#m_threads .topicrow, .topicrow, #topicrows tr',
-    [PAGE.THREAD]: '#m_posts .postrow, .forumbox.postbox, [id^="postcontent"]',
+    [PAGE.BOARD]: '#topicrows .topicrow, .topicrow',
+    [PAGE.THREAD]: '#m_posts .postrow, tr.postrow, [id^="postcontent"]',
 };
 
 /**
- * 等原站把内容渲染出来。
- * NGA 的楼层/列表有一部分是 DOMContentLoaded 之后由它的 JS 插进来的
- * （参照 NGA优化摸鱼体验 的做法：它会等 .small_colored_text_btn 出现再渲染），
- * 所以不能一到 DOMContentLoaded 就解析。
+ * 帖子页的「真的好了」判断。
+ * 实测：tr.postrow 出现得早，但此时 `commonui.postArg.data[i].contentC` 还指向容器（td），
+ * NGA 要再过一拍才把正文元素（p#postcontent{N}）塞进去。只看行存在就会拿到一坨没用的外壳。
+ * 所以这里直接问站点数据：每一层的 contentC 是不是正文元素（或者里面已经有正文元素了）。
  */
-function waitForTarget(kind, timeout = 3000) {
+function threadContentReady() {
+    const view = window;
+    const arg = view.commonui && view.commonui.postArg;
+    const items = arg && arg.data ? Object.values(arg.data) : [];
+
+    if (items.length) {
+        return items.every((item) => {
+            const node = item && item.contentC;
+            if (!node || node.nodeType !== 1) return false;
+            if (node.id && /^postcontent/i.test(node.id)) return true;
+            return Boolean(node.querySelector && node.querySelector('[id^="postcontent"], .postcontent'));
+        });
+    }
+
+    // 站点数据还没挂上（它比楼层行晚）—— 退一步只看 DOM：首楼正文得真的有东西
+    const content = document.querySelector('[id^="postcontent"]');
+    if (!content) return false;
+    return content.childNodes.length > 1 || cleanText(content.textContent).length > 40;
+}
+
+/**
+ * 等原站把内容渲染出来。
+ * NGA 的首页与帖子页列表都是 DOMContentLoaded 之后由它的 JS 插进来的
+ * （实测：read.php 的服务端 HTML 里没有楼层，nga-optimize 也在等 `.small_colored_text_btn`），
+ * 所以不能一到 DOMContentLoaded 就解析。用 MutationObserver 等信号，最多 8 秒。
+ *
+ * 返回 true 表示「认定这是错误页，别再等了」。
+ */
+function waitForTarget(kind, timeout = 8000) {
     const selector = READY_SELECTORS[kind];
-    if (!selector || document.querySelector(selector)) return Promise.resolve(false);
+
+    const ready = () => {
+        if (!selector || !document.querySelector(selector)) return false;
+        // 帖子页再额外等站点数据/正文变成熟（避免只拿到没渲染完的外壳）
+        if (kind === PAGE.THREAD) return threadContentReady();
+        return true;
+    };
+
+    if (ready()) return Promise.resolve(false);
+    if (detectBlocked(document)) return Promise.resolve(true);
 
     return new Promise((resolve) => {
         const started = Date.now();
-        const timer = setInterval(() => {
-            const ready = Boolean(document.querySelector(selector));
-            const blocked = Boolean(detectBlocked(document));
-            const expired = Date.now() - started > timeout;
-            if (ready || blocked || expired) {
-                clearInterval(timer);
-                resolve(blocked);
-            }
-        }, 120);
+        let timer = 0;
+
+        const finish = (blocked) => {
+            observer.disconnect();
+            clearInterval(timer);
+            resolve(blocked);
+        };
+
+        const check = () => {
+            if (ready()) return finish(false);
+            if (detectBlocked(document)) return finish(true);
+            if (Date.now() - started > timeout) return finish(false);
+            return false;
+        };
+
+        const observer = new MutationObserver(() => check());
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+        timer = setInterval(check, 250);
+        check();
     });
 }
 
 /**
  * 解析当前文档。等过就绪信号之后偶尔还会差一点，所以再短重试几次才认输。
  */
-async function parseLive(url, attempts = 5, delay = 400) {
+async function parseLive(url, attempts = 4, delay = 500) {
     let model = parsePage(document, url);
     for (let index = 1; index < attempts && model.kind === PAGE.UNKNOWN; index += 1) {
         await sleep(delay);
@@ -138,26 +227,20 @@ async function parseLive(url, attempts = 5, delay = 400) {
    渲染
    -------------------------------------------------------------------------- */
 
+/** 滚动位置：只在「同一页重渲染」（改设置、切主题）时保留 */
+let savedScrollTop = 0;
+
 function render(model, options = {}) {
     const shell = state.shell;
-    const previousUrl = state.model && state.model.url;
-    if (options.rememberScroll !== false) shell.rememberScroll(previousUrl);
+    if (options.keepScroll) savedScrollTop = shell.main.scrollTop;
 
     state.model = model;
 
     shell.clear();
     shell.renderSidebar(model);
+    shell.inner.appendChild(buildPage(model));
 
-    const content = buildPage(model);
-    shell.inner.appendChild(content);
-
-    if (options.push) {
-        const url = model.url || location.href;
-        if (url !== location.href) history.pushState({ ngr: true }, '', url);
-    }
-
-    const remembered = options.keepScroll ? shell.rememberScroll(model.url) || 0 : 0;
-    shell.main.scrollTop = remembered;
+    shell.main.scrollTop = options.keepScroll ? savedScrollTop : 0;
     shell.main.focus({ preventScroll: true });
 
     applyTitle(model);
@@ -227,39 +310,17 @@ function unknownPage(model) {
     return wrap;
 }
 
-function errorPage(url, error) {
-    const wrap = document.createElement('div');
-    wrap.className = 'ngr-page';
-    wrap.appendChild(notice(`页面加载失败：${error && error.message ? error.message : error}`));
-    const actions = document.createElement('div');
-    actions.className = 'ngr-head-actions';
-    actions.appendChild(button('重试', { icon: 'refresh', onclick: () => navigate(url, { force: true }) }));
-    actions.appendChild(button('以原站方式打开', { onclick: () => openOriginal(url) }));
-    return wrap;
-}
-
 /* --------------------------------------------------------------------------
    导航
+   --------------------------------------------------------------------------
+   为什么不做成 SPA：实测（ngabbs.com 登录态）用 fetch 回来的 HTML 里
+   首页没有 .catenew、read.php 没有楼层 —— 这些内容都是 NGA 自己的 JS 后注入的。
+   所以站内跳转一律交给浏览器整页导航，新页面由 content script 重新接管；
+   代价是每次多下一次原站 HTML，换来的是「不会渲染出空页面」+ 浏览器自带前进/后退。
    -------------------------------------------------------------------------- */
 
-async function navigate(url, options = {}) {
-    // 注意：要用「当前渲染的是哪一页」判断，而不是 location.href ——
-    // 浏览器后退时 location 已经变了，但界面还停在上一页
-    if (!options.force && state.model && state.model.url === url) return;
-    const shell = state.shell;
-    shell.setLoading(true);
-    try {
-        const doc = await loadDocument(url, { force: options.force });
-        const model = parsePage(doc, url);
-        render(model, { push: options.push !== false, keepScroll: options.keepScroll });
-    } catch (error) {
-        console.warn('[Reader] 加载失败', error);
-        shell.clear();
-        shell.renderSidebar(state.model || { kind: PAGE.UNKNOWN, url });
-        shell.inner.appendChild(errorPage(url, error));
-    } finally {
-        shell.setLoading(false);
-    }
+function navigate(url) {
+    location.assign(url);
 }
 
 function openOriginal(url) {
@@ -267,38 +328,6 @@ function openOriginal(url) {
     const target = new URL(url || location.href, location.href);
     target.searchParams.set('ngr', 'off');
     location.href = target.href;
-}
-
-/** 拦截站内链接，改成「取 HTML + 自己渲染」，页面不再整页刷新 */
-function onClick(event) {
-    if (event.defaultPrevented || event.button !== 0) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-
-    const anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-    if (!anchor) return;
-
-    const href = anchor.getAttribute('href') || '';
-    if (!href || href.startsWith('#')) return;
-    if (anchor.target && anchor.target !== '_self') return;
-
-    let url;
-    try {
-        url = new URL(anchor.href, location.href);
-    } catch {
-        return;
-    }
-    if (url.origin !== location.origin) return;
-    if (routeKind(url.href) === PAGE.UNKNOWN) return; // 非阅读页交给浏览器
-
-    event.preventDefault();
-    navigate(url.href);
-}
-
-function onPopState() {
-    const url = location.href;
-    const model = state.model;
-    if (model && model.url === url) return;
-    navigate(url, { push: false, keepScroll: true });
 }
 
 /* --------------------------------------------------------------------------
@@ -343,7 +372,7 @@ function onKeyDown(event) {
             disable();
             break;
         case 'r':
-            if (state.model) navigate(state.model.url, { force: true, push: false });
+            location.reload();
             break;
         case 'j':
             scrollBy(320);
@@ -431,7 +460,7 @@ async function handleExternalSettingsChange(next) {
         Boolean(previous.stealth) !== Boolean(next.stealth);
 
     if (needsRender && state.model && state.model.kind) {
-        render(state.model, { push: false, rememberScroll: false, keepScroll: true });
+        render(state.model, { keepScroll: true });
     } else {
         applyTitle(state.model);
     }
@@ -464,7 +493,7 @@ function buildContext() {
             return state.settings;
         },
         navigate,
-        reload: () => state.model && navigate(state.model.url, { force: true, push: false }),
+        reload: () => location.reload(),
         toast: (message) => state.shell.toast(message),
         isFavorite: (fid) =>
             Boolean(
@@ -497,7 +526,5 @@ function buildContext() {
    -------------------------------------------------------------------------- */
 
 function bindEvents() {
-    document.addEventListener('click', onClick, true);
-    window.addEventListener('popstate', onPopState);
     document.addEventListener('keydown', onKeyDown);
 }

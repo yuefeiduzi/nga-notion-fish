@@ -5,6 +5,15 @@
  * 然后按正常路径启动应用。这样没有 NGA 登录也能验证解析 + 排版。
  */
 
+// 开发用：把页面上的报错收集起来，方便一把抓（window.__ngrErrors）
+globalThis.__ngrErrors = [];
+globalThis.addEventListener('error', (event) => {
+    globalThis.__ngrErrors.push(`error: ${event.message} @ ${event.filename}:${event.lineno}`);
+});
+globalThis.addEventListener('unhandledrejection', (event) => {
+    globalThis.__ngrErrors.push(`rejection: ${event.reason && event.reason.stack ? event.reason.stack : event.reason}`);
+});
+
 if (!globalThis.chrome) {
     const KEY = 'reader-settings';
     const listeners = [];

@@ -42,37 +42,39 @@ const SEL = {
     homeGroupTitle: ['.catetitle', ':scope > h2', ':scope > .cate_title', ':scope > strong'],
     navLinks: ['.nav_link', '.nav a.nav_link', '.nav_root', '#nav a', '.nav a'],
 
-    // 帖子列表页（thread.php）：行确认为 .topicrow（NGA优化摸鱼体验 的 renderThreads 就是遍历 .topicrow）
-    boardTable: ['#m_threads', '#topicrows', 'table.forumbox', '#threadlist table', '.forumbox'],
+    // 主题列表页（thread.php）：实测 `#topicrows > tbody > tr.row1/.row2.topicrow`
+    boardTable: ['#m_threads #topicrows', '#topicrows', 'table.forumbox'],
     boardRow: [
-        '#m_threads .topicrow',
+        '#topicrows > tbody > tr.topicrow',
         'tr.topicrow',
-        '#topicrows > tbody > tr',
         '#topicrows tr',
         'table.forumbox tbody tr',
         '.topicrow',
     ],
-    boardTitle: ['td.c2 a.topic', 'a.topic', 'td.c2 a[href*="read.php"]', 'a[href*="read.php?tid="]'],
-    boardTag: ['td.c2 span[class^="t_k_"]', 'span[class^="t_k_"]', '.topic_tag', '.topic_tag_normal'],
-    boardAuthor: ['td.c3 a.author', 'a.author', 'td.c3 a[href*="uid="]', 'a[href*="uid="]'],
-    boardDate: ['td.c3 span.postdate', 'span.silver.postdate', '.postdate', 'td.c3 time'],
-    boardStats: ['td.c4', '.replies', '.reply_count'],
+    boardTitle: ['td.c2 a.topic', 'a.topic', 'td.c2 a[href*="read.php"]'],
+    // 标签有两处：标题里的 span.t_k_c{n} 前缀、以及右侧 span.titleadd2 > a
+    boardTag: ['td.c2 span.titleadd2 a', 'td.c2 span[class^="t_k_"]', 'span[class^="t_k_"]'],
+    boardAuthor: ['td.c3 a.author', 'a.author', 'td.c3 a[href*="uid="]'],
+    boardDate: ['td.c3 span.postdate', 'span.silver.postdate', '.postdate'],
+    // 实测：回复数在 td.c1 的 a.replies 里，td.c4 是「最后回复」（时间 + 人）
+    boardReplies: ['td.c1 a.replies', 'td.c1 .replies'],
+    boardLastReply: ['td.c4 a.replydate', 'td.c4 .replydate'],
+    boardLastReplyUser: ['td.c4 .replyer', 'td.c4 span.replyer'],
 
-    // 帖子页（read.php）：一层楼 = 一个 .forumbox.postbox，行上是 .postrow
+    // 帖子页（read.php）：实测 #m_posts_c > table.forumbox.postbox 是**整个**楼层列表，
+    // 真正的「一层楼」是里面的 tr.postrow（首楼 id 为 post1strow0，其余无 id）
     postRow: [
-        '#m_posts_c > table.postbox',
-        '#m_posts .postrow',
-        'table.postbox',
-        '.forumbox.postbox',
+        '#m_posts_c tr.postrow',
+        'tr.postrow',
         '[id^="post1strow"]',
+        '.postrow',
         'table.postrow',
-        '[class*="postrow"]',
     ],
     postContent: ['[id^="postcontent"]', '.postcontent', '.ubbcode', '.post_content'],
     postSubject: ['[id^="postsubject"]', '.postsubject'],
-    postAuthorBlock: ['.posterInfoLine', '[id^="postauthor"]', '.posterinfo', 'td.c1'],
-    postAuthorName: ['.author', 'a.userlink', '[name="uid"]', 'a[href*="uid="]'],
-    postTime: ['[id^="postdate"]', '.postdate', '.silver'],
+    postAuthorBlock: ['[id^="postauthor"]', '.posterInfoLine', '[id^="posterinfo"]', '.posterinfo', 'td.c1'],
+    postAuthorName: ['.author', 'a.userlink', '.block_txt', '[name="uid"]'],
+    postTime: ['[id^="postdate"]', '.postdatec', '.postdate', '.postInfo'],
     postFloor: ['[id^="postnum"]', '.postfloor', '[class*="postfloor"]'],
     postRecommend: ['.recommendvalue', '[id^="recommendvalue"]', '.post_recommend'],
 
@@ -155,23 +157,74 @@ function pageGlobals(doc) {
     return view;
 }
 
-/** 帖子页：commonui.postArg.data 里每项含 pid / pAid / contentC / subjectC / uInfoC / i */
+/**
+ * 正文元素的正主：`p#postcontent{N}.postcontent`。
+ *
+ * 坑：NGA 外面还有个包装元素 `span#postcontentandsubject{N}`，它同样会被
+ * `[id^="postcontent"]` 命中，而且位置更靠前。早先用「前缀匹配」判断，
+ * 结果把包装元素当成了正文，渲染出一块「锁定角标 + 标题 + 正文」的外壳。
+ */
+const CONTENT_ID_RE = /^postcontent\d+$/i;
+
+function findContentEl(node) {
+    if (!isElement(node)) return null;
+    if (CONTENT_ID_RE.test(node.id || '')) return node;
+
+    const candidates = node.querySelectorAll('[id^="postcontent"], .postcontent');
+    for (const candidate of candidates) {
+        if (CONTENT_ID_RE.test(candidate.id || '') || candidate.classList.contains('postcontent')) {
+            return candidate;
+        }
+    }
+    return null;
+}
+
+/**
+ * 帖子页：`commonui.postArg.data` 的每一项就是一层楼。
+ * 2026-09 实测字段：i / pC / subjectC / contentC / signC / uInfoC / pInfoC / postBtnC /
+ * pid / pAid / postTime（unix 秒）/ recommend（赞数）/ comment / score …
+ *
+ * 坑：NGA 自己渲染的过程中 contentC 会先指向容器（td），渲染完才变成正文元素，
+ * 所以这里统一归一化 —— 只要不是正文元素，就往里找 `[id^=postcontent]`。
+ */
 function readPostArg(doc) {
     const view = pageGlobals(doc);
     const arg = view && view.commonui && view.commonui.postArg;
     if (!arg || !arg.data) return null;
 
-    const items = Object.values(arg.data).filter((item) => isElement(item && item.contentC));
+    const items = Object.values(arg.data).filter((item) => isElement(item && item.contentC) && 'i' in item);
     if (!items.length) return null;
 
-    return items.map((item, index) => ({
-        pid: item.pid ? String(item.pid) : '',
-        uid: item.pAid != null ? String(item.pAid) : '',
-        index: typeof item.i === 'number' ? item.i : index,
-        contentEl: item.contentC,
-        subjectEl: isElement(item.subjectC) ? item.subjectC : null,
-        authorEl: isElement(item.uInfoC) ? item.uInfoC : null,
-    }));
+    return items.map((item, index) => {
+        const raw = item.contentC;
+        const inner = findContentEl(raw);
+        const recommend = Number(item.recommend);
+
+        return {
+            pid: item.pid ? String(item.pid) : '',
+            uid: item.pAid != null ? String(item.pAid) : '',
+            index: typeof item.i === 'number' ? item.i : index,
+            contentEl: inner || raw,
+            subjectEl: isElement(item.subjectC) ? item.subjectC : null,
+            authorEl: isElement(item.uInfoC) ? item.uInfoC : null,
+            containerEl: isElement(item.pC) ? item.pC : null,
+            time: formatStamp(item.postTime),
+            recommend: Number.isFinite(recommend) ? recommend : null,
+        };
+    });
+}
+
+/** unix 秒 → 「2026-09-14 12:33」（后面的 compactTime 认这个格式） */
+function formatStamp(seconds) {
+    const value = Number(seconds);
+    if (!Number.isFinite(value) || value <= 0) return '';
+    const date = new Date(value * 1000);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (part) => String(part).padStart(2, '0');
+    return (
+        date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+        ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes())
+    );
 }
 
 /** 列表页：commonui.topicArg.data 里每项是数组，[1] 标题元素、[2] 作者元素、[7] fid、[8] tid */
@@ -302,39 +355,52 @@ function withPage(url, page) {
    首页：板块目录
    -------------------------------------------------------------------------- */
 
+/**
+ * 首页：板块目录。
+ *
+ * 实测结构（ngabbs.com 首页）是「标题块 + 内容块」分离的：
+ *   <div class="catenew"><h2 class="catetitle">:: 网事杂谈 ::</h2></div>   ← 只有标题，没有链接
+ *   <div class="catenew"> …46 个 fid 链接… <h2 class="catetitle">:: IT软硬件 ::</h2> … </div>
+ * 所以不能「一个 .catenew 一组」，改成按文档顺序走：遇到 .catetitle 就开新组，
+ * 之后的 fid 链接都归它，直到下一个标题。这样标题块、子标题、混排三种情况都能覆盖。
+ */
 function parseHome(doc, url) {
     const groups = [];
+    const seen = new Set();
+    let current = null;
 
-    for (const container of all(doc, SEL.homeGroup)) {
-        const titleNode = first(container, SEL.homeGroupTitle);
-        const name = cleanText(titleNode ? titleNode.textContent : '')
-            .replace(/^[:：\s]+/, '')
-            .replace(/[:：\s]+$/, '');
-        const forums = [];
-        container.querySelectorAll('a[href*="fid="]').forEach((link) => {
-            const fid = (link.getAttribute('href') || '').match(/fid=(-?\d+)/);
-            const label = cleanText(link.textContent);
-            if (!fid || !label) return;
-            forums.push({
-                fid: Number(fid[1]),
-                name: label.replace(/\s+/g, ''),
-                url: absolute(link.getAttribute('href'), url),
-            });
-        });
-        if (forums.length) groups.push({ name: name || '板块', forums });
-    }
+    const walker = doc.createTreeWalker(
+        doc.body || doc.documentElement,
+        NodeFilter.SHOW_ELEMENT,
+        null
+    );
 
-    if (!groups.length) {
-        const forums = [];
-        doc.querySelectorAll('a[href*="fid="]').forEach((link) => {
-            const fid = (link.getAttribute('href') || '').match(/fid=(-?\d+)/);
-            const label = cleanText(link.textContent);
+    const flush = () => {
+        if (current && current.forums.length) groups.push(current);
+    };
+
+    let node = walker.currentNode;
+    while (node) {
+        if (node.classList && node.classList.contains('catetitle')) {
+            flush();
+            const name = cleanText(node.textContent).replace(/^[:：\s]+/, '').replace(/[:：\s]+$/, '');
+            // 首页有一块占位标题是字面量 "undefined"，忽略它，继续归到上一组
+            current = name && name !== 'undefined' ? { name, forums: [] } : null;
+        } else if (node.tagName === 'A' && current) {
+            const href = node.getAttribute('href') || '';
+            const fid = href.match(/fid=(-?\d+)/);
+            const label = cleanText(node.textContent).replace(/\s+/g, '');
             if (fid && label) {
-                forums.push({ fid: Number(fid[1]), name: label, url: absolute(link.getAttribute('href'), url) });
+                const id = Number(fid[1]);
+                if (!seen.has(id)) {
+                    seen.add(id);
+                    current.forums.push({ fid: id, name: label, url: absolute(href, url) });
+                }
             }
-        });
-        if (forums.length) groups.push({ name: '全部板块', forums });
+        }
+        node = walker.nextNode();
     }
+    flush();
 
     return { kind: PAGE.HOME, url, groups };
 }
@@ -353,6 +419,90 @@ function isPinnedRow(row, titleEl, tagText) {
     return wordHit || /置顶|锁定|公告/.test(tagText);
 }
 
+/**
+ * 标题处理：
+ * 1. 标题里内嵌的 `span.t_k_c{n}` 前缀（NGA 用来上色的小标签）要去掉，单独当标签用；
+ * 2. 实测还有一部分主题的标签是**纯文本前缀**（`[本赛区赛事]标题…`），一并摘出来。
+ */
+function pickTitle(titleEl) {
+    if (!titleEl) return { title: '', inlineTag: '' };
+    const clone = titleEl.cloneNode(true);
+    const inline = clone.querySelector('span[class^="t_k_"]');
+    const inlineTag = cleanText(inline && inline.textContent);
+    if (inline) inline.remove();
+
+    let title = cleanText(clone.textContent);
+    let prefix = '';
+    const match = title.match(/^[[【]([^\]】]{1,12})[\]】]\s*/);
+    if (match) {
+        prefix = match[1];
+        title = title.slice(match[0].length);
+    }
+
+    return { title: title || cleanText(titleEl.textContent), inlineTag: inlineTag || prefix };
+}
+
+/** 标签去掉方括号：[联盟赛事] -> 联盟赛事 */
+function cleanTag(value) {
+    return cleanText(value).replace(/^[[【]|[】\]]$/g, '').trim();
+}
+
+/** 把 replies / views 这类「数字或者没」统一成数字 */
+function statNumber(node) {
+    const value = digits(node && node.textContent);
+    return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * 把一行主题变成模型。两条取数路径（站点数据 / 选择器兜底）共用这一份，
+ * 免得两边逻辑跑偏。
+ */
+function buildThread({ row, titleEl, tid, authorEl, url }) {
+    const { title, inlineTag } = pickTitle(titleEl);
+    const href = absolute(titleEl.getAttribute('href'), url);
+    const tidFromHref = (href.match(/tid=(\d+)/) || [])[1] || '';
+    const tagEl = first(row, SEL.boardTag);
+    const tag = cleanTag(cleanText(tagEl && tagEl.textContent) || inlineTag);
+    const authorNode = authorEl || first(row, SEL.boardAuthor);
+    const dateEl = first(row, SEL.boardDate);
+    const lastReplyEl = first(row, SEL.boardLastReply);
+    const lastReplyUserEl = first(row, SEL.boardLastReplyUser);
+    const repliesNode = first(row, SEL.boardReplies);
+
+    // 实测：回复数在 td.c1 a.replies；只有老结构才把「回复/查看」放在 td.c4
+    let replies = statNumber(repliesNode);
+    let views = null;
+    if (replies === null) {
+        const cells = Array.from(row.querySelectorAll('td'));
+        const statText = cleanText(cells.length >= 4 ? cells[3].textContent : '');
+        const statNumbers = statText.match(/\d+/g) || [];
+        if (statNumbers.length) replies = Number(statNumbers[0]);
+        if (statNumbers.length > 1) views = Number(statNumbers[1]);
+    }
+
+    const lastReplyTime = cleanText(
+        (lastReplyEl && (lastReplyEl.getAttribute('title') || lastReplyEl.textContent)) || ''
+    );
+    const lastReplyUser = cleanText(lastReplyUserEl && lastReplyUserEl.textContent);
+
+    return {
+        tid: String(tid || tidFromHref),
+        title,
+        url: href || `read.php?tid=${tid}`,
+        tag,
+        author: cleanText(authorNode && authorNode.textContent),
+        authorUrl: absolute(authorNode && authorNode.getAttribute('href'), url),
+        time: cleanText(dateEl && dateEl.textContent),
+        replies,
+        views,
+        lastReply: [lastReplyTime, lastReplyUser].filter(Boolean).join(' · ').slice(0, 40),
+        excerpt: cleanText(
+            (first(row, ['td.c2 .topic_content', '.topic_content', '.topic_desc']) || {}).textContent || ''
+        ),
+        isPinned: isPinnedRow(row, titleEl, tag),
+    };
+}
+
 function parseBoard(doc, url) {
     const threads = [];
     const seen = new Set();
@@ -368,27 +518,14 @@ function parseBoard(doc, url) {
         // 优先用 NGA 自己的数据：标题/作者元素直接给，tid/fid 直接给
         for (const item of topicArg) {
             const row = item.titleEl.closest('tr') || item.titleEl;
-            const tagEl = first(row, SEL.boardTag);
-            const tagText = cleanText(tagEl && tagEl.textContent);
-            const dateEl = first(row, SEL.boardDate);
-            const cells = Array.from(row.querySelectorAll('td'));
-            const statText = cleanText(cells.length >= 4 ? cells[3].textContent : '');
-            const statNumbers = statText.match(/\d+/g) || [];
-
-            pushThread({
+            const built = buildThread({
+                row,
+                titleEl: item.titleEl,
                 tid: item.tid,
-                title: cleanText(item.titleEl.textContent),
-                url: absolute(item.titleEl.getAttribute('href'), url),
-                tag: tagText,
-                author: cleanText(item.authorEl && item.authorEl.textContent),
-                authorUrl: absolute(item.authorEl && item.authorEl.getAttribute('href'), url),
-                time: cleanText(dateEl && dateEl.textContent),
-                replies: statNumbers.length ? Number(statNumbers[0]) : null,
-                views: statNumbers.length > 1 ? Number(statNumbers[1]) : null,
-                lastReply: cleanText(cells.length ? cells[cells.length - 1].textContent : '').slice(0, 40),
-                excerpt: '',
-                isPinned: isPinnedRow(row, item.titleEl, tagText),
+                authorEl: item.authorEl,
+                url,
             });
+            pushThread(built);
         }
     }
 
@@ -401,37 +538,7 @@ function parseBoard(doc, url) {
         rows.forEach((row) => {
             const titleEl = first(row, SEL.boardTitle);
             if (!titleEl) return;
-            const href = absolute(titleEl.getAttribute('href'), url);
-            const tidMatch = href.match(/tid=(\d+)/);
-            if (!tidMatch) return;
-
-            const tagEl = first(row, SEL.boardTag);
-            const authorEl = first(row, SEL.boardAuthor);
-            const dateEl = first(row, SEL.boardDate);
-            const tagText = cleanText(tagEl && tagEl.textContent);
-            const cells = Array.from(row.querySelectorAll('td'));
-            const statText = cleanText(
-                (cells.length >= 4 && cells[3].textContent) || (first(row, SEL.boardStats) || {}).textContent || ''
-            );
-            const statNumbers = statText.match(/\d+/g) || [];
-            const lastCell = cells.length ? cells[cells.length - 1] : null;
-
-            pushThread({
-                tid: tidMatch[1],
-                title: cleanText(titleEl.textContent),
-                url: href,
-                tag: tagText,
-                author: cleanText(authorEl && authorEl.textContent),
-                authorUrl: absolute(authorEl && authorEl.getAttribute('href'), url),
-                time: cleanText(dateEl && dateEl.textContent),
-                replies: statNumbers.length ? Number(statNumbers[0]) : null,
-                views: statNumbers.length > 1 ? Number(statNumbers[1]) : null,
-                lastReply: cleanText(lastCell ? lastCell.textContent : '').slice(0, 40),
-                excerpt: cleanText(
-                    (first(row, ['td.c2 .topic_content', '.topic_content', '.topic_desc']) || {}).textContent || ''
-                ),
-                isPinned: isPinnedRow(row, titleEl, tagText),
-            });
+            pushThread(buildThread({ row, titleEl, url }));
         });
     }
 
@@ -510,12 +617,16 @@ function parsePosts(doc, url, page) {
         // NGA 自己的数据：floor 索引在同一页内递增，pid/uid/元素都是现成的
         argItems.forEach((item, index) => {
             const container =
+                item.containerEl ||
                 (item.authorEl && item.authorEl.closest('tr')) ||
                 item.contentEl.closest('tr') ||
-                item.contentEl.closest('table.postbox') ||
                 item.contentEl.parentElement;
             const author = pickAuthor(container, item.authorEl);
-            const recommendText = cleanText((first(container, SEL.postRecommend) || {}).textContent || '');
+            // 赞数优先用站点数据，没有再去 DOM 里找
+            const recommend =
+                item.recommend != null
+                    ? item.recommend
+                    : digits(cleanText((first(container, SEL.postRecommend) || {}).textContent || ''));
 
             posts.push({
                 pid: item.pid,
@@ -524,8 +635,8 @@ function parsePosts(doc, url, page) {
                 author: author.name || '匿名',
                 authorUrl: author.url,
                 uid: item.uid || author.uid,
-                time: pickTime(container),
-                recommend: digits(recommendText),
+                time: item.time || pickTime(container),
+                recommend,
                 subject: pickSubject(item.subjectEl),
                 sourceEl: item.contentEl,
             });
@@ -533,12 +644,13 @@ function parsePosts(doc, url, page) {
         return posts;
     }
 
-    const rawRows = all(doc, SEL.postRow).filter((row) => first(row, SEL.postContent));
+    const rawRows = all(doc, SEL.postRow).filter((row) => findContentEl(row) || first(row, SEL.postContent));
     // 去掉被其他行包住的嵌套行（table.postbox 的 tr 会被两条选择器同时命中）
     const rows = rawRows.filter((row) => !rawRows.some((other) => other !== row && other.contains(row)));
 
     rows.forEach((row, index) => {
-        const contentEl = first(row, SEL.postContent);
+        // 这里同样要用精确查找：`[id^="postcontent"]` 会先命中包装元素
+        const contentEl = findContentEl(row) || first(row, SEL.postContent);
         if (!contentEl) return;
 
         // 楼层 id 在不同版本里是「页内序号」或「pid」，两种都试

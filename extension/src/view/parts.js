@@ -139,8 +139,41 @@ export function pager(options) {
     return wrap;
 }
 
+/** 元信息之间插「·」：作者 · 时间 · 回复数 */
+export function joinMeta(nodes) {
+    const out = [];
+    nodes.filter(Boolean).forEach((node, index) => {
+        if (index) out.push(el('span', { class: 'ngr-dot', text: '·', 'aria-hidden': 'true' }));
+        out.push(node);
+    });
+    return out;
+}
+
 export function emptyState(text) {
     return el('div', { class: 'ngr-empty', text });
+}
+
+/** 等原站渲染时的骨架屏：先让用户看到我们的壳，而不是一片空白 */
+export function skeletonPage(rows = 6) {
+    const wrap = el('div', { class: 'ngr-page ngr-skeleton' });
+    const head = el('header', { class: 'ngr-head' });
+    head.appendChild(el('div', { class: 'ngr-skel', style: { width: '180px', height: '13px' } }));
+    head.appendChild(el('div', { class: 'ngr-skel', style: { width: '62%', height: '30px', margin: '18px 0' } }));
+    head.appendChild(el('div', { class: 'ngr-skel', style: { width: '240px', height: '13px' } }));
+    wrap.appendChild(head);
+
+    for (let index = 0; index < rows; index += 1) {
+        const block = el('div', { class: 'ngr-floor' });
+        block.appendChild(el('span', { class: 'ngr-floor-marker', text: String(index + 1).padStart(2, '0') }));
+        const body = el('div');
+        body.appendChild(el('div', { class: 'ngr-skel', style: { width: '150px', height: '12px' } }));
+        body.appendChild(el('div', { class: 'ngr-skel', style: { width: `${92 - index * 9}%`, height: '14px' } }));
+        body.appendChild(el('div', { class: 'ngr-skel', style: { width: `${74 - index * 6}%`, height: '14px' } }));
+        block.appendChild(body);
+        wrap.appendChild(block);
+    }
+
+    return wrap;
 }
 
 export function notice(text) {

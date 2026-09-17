@@ -9,10 +9,14 @@
     </head>
     <body>
         <!--
-          本地调试样例。结构按真实 NGA thread.php 的组织方式仿写：
-          #topicrows > table.forumbox > tr.row1/.row2 > td.c1~c4
-            a.topic（标题）/ span[class^=t_k_]（标签）/ a.author / span.silver.postdate
-          加 ?nopostarg=1 可跳过 NGA 站点数据的伪造，用来单独验证选择器兜底路径。
+          本地调试样例。**层级与类名照抄真实 ngabbs.com thread.php**（2026-09 实测）：
+            table#topicrows.forumbox > tbody > tr.row1|row2.topicrow
+              td.c1 > a#t_rc1_{n}.replies                       ← 回复数在这里（不是 c4）
+              td.c2 > span.t_k_c{n}[标签] + a#t_tt1_{n}.topic   ← 标题（标签前缀内嵌在标题里）
+                      span.titleadd2 > a                        ← 右侧标签
+              td.c3 > a#t_ta1_{n}.author + span#t_pt1_{n}.silver.postdate
+              td.c4 > a#t_rt1_{n}.silver.replydate[title=绝对时间] + span#t_tr1_{n}.replyer
+          加 ?nopostarg=1 可跳过冻结的站数据，验证选择器兜底路径。
         -->
         <div id="mmc">
             <div class="nav">
@@ -23,98 +27,97 @@
 
             <table id="topicrows" class="forumbox">
                 <tbody>
-                    <tr class="row1">
-                        <td class="c1"><span class="t_k_1">置顶</span></td>
+                    <tr class="row1 topicrow">
+                        <td class="c1"><a id="t_rc1_0" class="replies" href="/read.php?tid=1000001" title="打开新窗口">3</a></td>
                         <td class="c2">
-                            <span class="t_k_1">公告</span>
-                            <a class="topic" href="/read.php?tid=1000001">版规与发帖须知（2026 修订版）</a>
+                            <span class="t_k_c0">[公告]</span>
+                            <a id="t_tt1_0" class="topic" href="/read.php?tid=1000001">版规与发帖须知（2026 修订版）</a>
+                            <span class="titleadd2"><a href="/thread.php?fid=-7" class="silver">[公告]</a></span>
                         </td>
                         <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=1">版务组</a>
-                            <span class="silver postdate">2026-01-04 10:00</span>
+                            <a id="t_ta0" class="author" href="/nuke.php?func=ucp&uid=1"><b class="block_txt">版务组</b></a>
+                            <span id="t_pt1_0" class="silver postdate">2026-01-04 10:00</span>
                         </td>
-                        <td class="c4"><span class="replies">3</span>/<span class="views">45210</span></td>
+                        <td class="c4">
+                            <a id="t_rt1_0" class="silver replydate" title="26-09-14 09:10" href="/read.php?tid=1000001">09-14 09:10</a>
+                            <span class="replyer" id="t_tr1_0"><b class="block_txt">版务组</b></span>
+                        </td>
                     </tr>
-                    <tr class="row2">
-                        <td class="c1"></td>
+                    <tr class="row2 topicrow">
+                        <td class="c1"><a id="t_rc1_1" class="replies" href="/read.php?tid=1234567">128</a></td>
                         <td class="c2">
-                            <span class="t_k_2">攻略</span>
-                            <a class="topic" href="/read.php?tid=1234567">[攻略] 12 层满星配队与轴表整理（9 月版本）</a>
+                            <span class="t_k_c0">[攻略]</span>
+                            <a id="t_tt1_1" class="topic" href="/read.php?tid=1234567">12 层满星配队与轴表整理（9 月版本）</a>
+                            <span class="titleadd2"><a href="/thread.php?fid=-7" class="silver">[攻略]</a></span>
                         </td>
                         <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a>
-                            <span class="silver postdate">2026-09-14 12:33</span>
+                            <a id="t_ta1" class="author" href="/nuke.php?func=ucp&uid=33123456"><b class="block_txt">猫猫头实验体</b></a>
+                            <span id="t_pt1_1" class="silver postdate">2026-09-14 12:33</span>
                         </td>
-                        <td class="c4">128/8642</td>
-                    </tr>
-                    <tr class="row1">
-                        <td class="c1"></td>
-                        <td class="c2"><a class="topic" href="/read.php?tid=1234568">新版本的护盾机制是不是有点过头了</a></td>
-                        <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=32001234">隔壁老王</a>
-                            <span class="silver postdate">2026-09-14 11:02</span>
+                        <td class="c4">
+                            <a id="t_rt1_1" class="silver replydate" title="26-09-14 15:12" href="/read.php?tid=1234567">5 分钟前</a>
+                            <span class="replyer" id="t_tr1_1"><b class="block_txt">1vvays</b></span>
                         </td>
-                        <td class="c4">64/3120</td>
                     </tr>
-                    <tr class="row2">
-                        <td class="c1"></td>
+                    <tr class="row1 topicrow">
+                        <td class="c1"><a id="t_rc1_2" class="replies" href="/read.php?tid=1234568">64</a></td>
                         <td class="c2">
-                            <span class="t_k_2">讨论</span>
-                            <a class="topic" href="/read.php?tid=1234569">这次卡池值得抽吗？进来投票</a>
+                            <a id="t_tt1_2" class="topic" href="/read.php?tid=1234568">新版本的护盾机制是不是有点过头了</a>
                         </td>
                         <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=33998877">路过的猫</a>
-                            <span class="silver postdate">2026-09-13 21:40</span>
+                            <a id="t_ta2" class="author" href="/nuke.php?func=ucp&uid=32001234"><b class="block_txt">隔壁老王</b></a>
+                            <span id="t_pt1_2" class="silver postdate">2026-09-14 11:02</span>
                         </td>
-                        <td class="c4">312/15890</td>
-                    </tr>
-                    <tr class="row1">
-                        <td class="c1"></td>
-                        <td class="c2"><a class="topic" href="/read.php?tid=1234570">手机端发热严重，有同样情况的吗</a></td>
-                        <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=31009988">深渊打工仔</a>
-                            <span class="silver postdate">2026-09-13 19:12</span>
+                        <td class="c4">
+                            <a id="t_rt1_2" class="silver replydate" title="26-09-14 14:58" href="/read.php?tid=1234568">14:58</a>
+                            <span class="replyer" id="t_tr1_2"><b class="block_txt">深渊打工仔</b></span>
                         </td>
-                        <td class="c4">27/2210</td>
                     </tr>
-                    <tr class="row2">
-                        <td class="c1"></td>
+                    <tr class="row2 topicrow">
+                        <td class="c1"><a id="t_rc1_3" class="replies" href="/read.php?tid=1234569">312</a></td>
                         <td class="c2">
-                            <span class="t_k_3">同人</span>
-                            <a class="topic" href="/read.php?tid=1234571">画了一张主 C 的同人图（持续更新）</a>
+                            <span class="t_k_c0">[讨论]</span>
+                            <a id="t_tt1_3" class="topic" href="/read.php?tid=1234569">这次卡池值得抽吗？进来投票</a>
+                            <span class="titleadd2"><a href="/thread.php?fid=-7" class="silver">[讨论]</a></span>
                         </td>
                         <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=31112233">数据党</a>
-                            <span class="silver postdate">2026-09-12 18:44</span>
+                            <a id="t_ta3" class="author" href="/nuke.php?func=ucp&uid=33998877"><b class="block_txt">路过的猫</b></a>
+                            <span id="t_pt1_3" class="silver postdate">2026-09-13 21:40</span>
                         </td>
-                        <td class="c4">96/7820</td>
+                        <td class="c4">
+                            <a id="t_rt1_3" class="silver replydate" title="26-09-14 15:01" href="/read.php?tid=1234569">刚刚</a>
+                            <span class="replyer" id="t_tr1_3"><b class="block_txt">数据党</b></span>
+                        </td>
                     </tr>
-                    <tr class="row1">
-                        <td class="c1"></td>
-                        <td class="c2"><a class="topic" href="/read.php?tid=1234572">求一个新手开荒顺序建议</a></td>
-                        <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=31778899">潜水员</a>
-                            <span class="silver postdate">2026-09-12 10:03</span>
+                    <tr class="row1 topicrow">
+                        <td class="c1"><a id="t_rc1_4" class="replies" href="/read.php?tid=1234570">27</a></td>
+                        <td class="c2">
+                            <a id="t_tt1_4" class="topic" href="/read.php?tid=1234570">手机端发热严重，有同样情况的吗</a>
                         </td>
-                        <td class="c4">45/3300</td>
+                        <td class="c3">
+                            <a id="t_ta4" class="author" href="/nuke.php?func=ucp&uid=31009988"><b class="block_txt">深渊打工仔</b></a>
+                            <span id="t_pt1_4" class="silver postdate">2026-09-13 19:12</span>
+                        </td>
+                        <td class="c4">
+                            <a id="t_rt1_4" class="silver replydate" title="26-09-14 12:20" href="/read.php?tid=1234570">12:20</a>
+                            <span class="replyer" id="t_tr1_4"><b class="block_txt">手残本残</b></span>
+                        </td>
                     </tr>
-                    <tr class="row2">
-                        <td class="c1"></td>
-                        <td class="c2"><a class="topic" href="/read.php?tid=1234573">版本更新后模组失效的临时解决办法</a></td>
-                        <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=33556677">手残本残</a>
-                            <span class="silver postdate">2026-09-11 22:15</span>
+                    <tr class="row2 topicrow">
+                        <td class="c1"><a id="t_rc1_5" class="replies" href="/read.php?tid=1234571">96</a></td>
+                        <td class="c2">
+                            <span class="t_k_c7">[同人]</span>
+                            <a id="t_tt1_5" class="topic" href="/read.php?tid=1234571">画了一张主 C 的同人图（持续更新）</a>
+                            <span class="titleadd2"><a href="/thread.php?fid=-7" class="silver">[同人]</a></span>
                         </td>
-                        <td class="c4">12/942</td>
-                    </tr>
-                    <tr class="row1">
-                        <td class="c1"></td>
-                        <td class="c2"><a class="topic" href="/read.php?tid=1234574">9 月版本平衡性调整汇总（含解析）</a></td>
                         <td class="c3">
-                            <a class="author" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a>
-                            <span class="silver postdate">2026-09-11 09:30</span>
+                            <a id="t_ta5" class="author" href="/nuke.php?func=ucp&uid=31112233"><b class="block_txt">数据党</b></a>
+                            <span id="t_pt1_5" class="silver postdate">2026-09-12 18:44</span>
                         </td>
-                        <td class="c4">203/12400</td>
+                        <td class="c4">
+                            <a id="t_rt1_5" class="silver replydate" title="26-09-13 23:11" href="/read.php?tid=1234571">09-13 23:11</a>
+                            <span class="replyer" id="t_tr1_5"><b class="block_txt">路过的猫</b></span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -128,7 +131,7 @@
         </div>
 
         <script>
-            // 伪造 NGA 自己的主题列表数据：数组下标 1=标题元素, 2=作者元素, 7=fid, 8=tid
+            // 伪造 NGA 的主题列表数据：数组下标 1=标题元素, 2=作者元素, 7=fid, 8=tid
             (function () {
                 if (/nopostarg=1/.test(location.search)) return;
                 var data = {};

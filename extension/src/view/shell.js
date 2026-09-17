@@ -12,7 +12,6 @@ export function createShell(ctx) {
     const side = el('aside', { class: 'ngr-side' });
     const main = el('main', { class: 'ngr-main', tabindex: '-1', id: 'ngr-main' });
     const inner = el('div', { class: 'ngr-main-inner' });
-    const progress = el('div', { class: 'ngr-progress' });
     const topButton = el(
         'button',
         { class: 'ngr-top', type: 'button', title: '回到顶部', onclick: () => scrollToTop() },
@@ -21,7 +20,7 @@ export function createShell(ctx) {
     const toastNode = el('div', { class: 'ngr-toast' });
 
     main.appendChild(inner);
-    append(root, [side, main, progress, topButton, toastNode]);
+    append(root, [side, main, topButton, toastNode]);
     document.body.appendChild(root);
 
     const boss = createBossLayer();
@@ -29,7 +28,6 @@ export function createShell(ctx) {
 
     let toastTimer = 0;
     let currentModel = null;
-    const scrollMemory = new Map();
 
     function scrollToTop() {
         main.scrollTo({ top: 0, behavior: 'smooth' });
@@ -44,17 +42,6 @@ export function createShell(ctx) {
         toastNode.classList.add('is-visible');
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => toastNode.classList.remove('is-visible'), 1800);
-    }
-
-    function setLoading(loading) {
-        progress.classList.toggle('is-loading', Boolean(loading));
-        if (loading) main.setAttribute('aria-busy', 'true');
-        else main.removeAttribute('aria-busy');
-    }
-
-    function rememberScroll(url) {
-        if (currentModel && currentModel.url) scrollMemory.set(currentModel.url, main.scrollTop);
-        return url ? scrollMemory.get(url) : 0;
     }
 
     /** 侧边栏：内容 / 板块 / 更多 */
@@ -285,9 +272,7 @@ export function createShell(ctx) {
         inner,
         boss,
         toast,
-        setLoading,
         renderSidebar,
-        rememberScroll,
         scrollToTop,
         clear() {
             inner.textContent = '';

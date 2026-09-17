@@ -34,6 +34,10 @@ const STRIP_SELECTORS = [
     '.goodbad',
     '[class*="goodbad"]',
     '.postsign',
+    '.postsignC',
+    // 正文里若还混着楼层标题 / 锁定角标，去掉（标题已在上层单独展示）
+    '[id^="postsubject"]',
+    '.vertmod',
     '.signature',
     '.sigline',
     '[id^="postsign"]',
@@ -54,6 +58,9 @@ const STRIP_SELECTORS = [
     '.comment_c',
     '.comment_c_1',
     '.comment_c_2',
+    // 附件区的标题与「展开附件」按钮（真正的附件图片已经在正文里了）
+    '.postbodysubtitle',
+    '.contentFullWidthButton',
 ];
 
 const INLINE_IMAGE_RE = /(smilie|smiley|post_smiley|e\d{2}\.gif|\/emot)/i;
@@ -82,7 +89,7 @@ export function sanitizeContent(sourceEl, options = {}) {
     unwrapLegacyTags(working);
     convertVideos(working, baseUrl);
     scrubAttributes(working, baseUrl);
-    processImages(working, baseUrl, hideImages);
+    processImages(working, baseUrl, hideImages, options);
     processLinks(working, baseUrl);
     tidyWhitespace(working);
 
@@ -189,14 +196,33 @@ function convertQuotes(root, baseUrl) {
    4. 折叠块 [collapse]
    -------------------------------------------------------------------------- */
 
+/**
+ * 实测结构（ngabbs.com）：
+ *   <div class="collapse_btn"><button name="collapseSwitchButton">+</button> 标题文字</div>
+ *   <div class="collapse_content" style="display:none"></div>   ← 内容通常是空的！
+ * 真正的内容是用户点击时由 NGA 的 JS 去拉的（ubbcode.collapse.load），
+ * 所以别假装能展开：内容为空就渲染一行「需在原站展开」的提示，有内容才转 <details>。
+ */
 function convertCollapse(root) {
-    // NGA 现代结构：.collapse_btn（按钮）+ .collapse_content（内容，默认 display:none）
     Array.from(root.querySelectorAll('.collapse_content')).forEach((node) => {
         const btn = node.previousElementSibling;
         const hasButton = Boolean(btn && btn.classList && btn.classList.contains('collapse_btn'));
+        const label = hasButton ? buttonLabel(btn) : '';
+        const hasContent = Boolean(clean(node.textContent)) || Boolean(node.querySelector('img, table, pre'));
+
+        if (!hasContent) {
+            const note = document.createElement('div');
+            note.className = 'ngr-collapse-note';
+            note.textContent = `${label ? label + ' ' : ''}（折叠内容需在原站展开）`;
+            if (hasButton) btn.replaceWith(note);
+            else node.replaceWith(note);
+            node.remove();
+            return;
+        }
+
         const details = document.createElement('details');
         const summary = document.createElement('summary');
-        summary.textContent = (hasButton && clean(btn.textContent)) || '展开';
+        summary.textContent = label || '展开';
         details.appendChild(summary);
         while (node.firstChild) details.appendChild(node.firstChild);
         if (hasButton) {
@@ -219,6 +245,13 @@ function convertCollapse(root) {
         node.replaceWith(details);
     });
     root.querySelectorAll('.collapse_btn').forEach((node) => node.remove());
+}
+
+/** 折叠按钮的文字：去掉那个「+」按钮和图标 */
+function buttonLabel(btn) {
+    const clone = btn.cloneNode(true);
+    clone.querySelectorAll('button, img, svg').forEach((node) => node.remove());
+    return clean(clone.textContent);
 }
 
 /* --------------------------------------------------------------------------
@@ -246,6 +279,7 @@ export function pickImageSrc(img) {
         img.getAttribute('data-src'),
         img.getAttribute('data-original'),
         img.getAttribute('data-lazy-src'),
+        img.getAttribute('data-srcorg'),
         img.getAttribute('file'),
         img.getAttribute('src'),
     ];
@@ -257,7 +291,7 @@ export function pickImageSrc(img) {
     return '';
 }
 
-function processImages(root, baseUrl, hideImages) {
+function processImages(root, baseUrl, hideImages, options) {
     root.querySelectorAll('img, [data-src][class*="img"]').forEach((node) => {
         if (node.tagName !== 'IMG') return;
 
@@ -269,7 +303,17 @@ function processImages(root, baseUrl, hideImages) {
         const alt = node.getAttribute('alt') || node.getAttribute('title') || '';
 
         if (!src) {
-            node.remove();
+            // 拿不到地址：NGA 的图片是懒加载的，没滚动到就一直是 about:blank。
+            // 不要静默删掉（会凭空少内容），给一个能点回原站的占位。
+            const fallback = document.createElement('a');
+            fallback.className = 'ngr-img-ph';
+            fallback.href = options.url || options.baseUrl || location.href;
+            fallback.target = '_blank';
+            fallback.rel = 'noopener noreferrer';
+            fallback.title = '这张图在原站是懒加载的，需要滚动才会加载';
+            fallback.appendChild(icon('image', 14));
+            fallback.appendChild(document.createTextNode('图片（懒加载，点原站查看）'));
+            node.replaceWith(fallback);
             return;
         }
 

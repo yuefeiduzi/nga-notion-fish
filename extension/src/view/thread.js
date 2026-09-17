@@ -5,7 +5,7 @@
 
 import { el, icon, compactTime } from '../core/dom.js';
 import { sanitizeContent } from '../nga/sanitize.js';
-import { pageHead, pager, button, linkButton, emptyState } from './parts.js';
+import { pageHead, pager, button, linkButton, emptyState, joinMeta } from './parts.js';
 
 export function renderThread(model, ctx) {
     const wrap = el('div', { class: 'ngr-page ngr-reading' });
@@ -80,20 +80,19 @@ function renderFloor(post, ctx, model) {
     const body = el('div', { class: 'ngr-floor-body' });
 
     // ---- 楼层元信息 ----
+    const recommendNode = el('span', { class: 'ngr-recommend', title: '赞同数' });
+    recommendNode.appendChild(icon('heart', 12));
+    recommendNode.appendChild(el('span', { text: String(post.recommend) }));
+
     const meta = el('div', { class: 'ngr-floor-meta' });
-    if (post.authorUrl) {
-        meta.appendChild(el('a', { class: 'ngr-floor-author', href: post.authorUrl, text: post.author }));
-    } else {
-        meta.appendChild(el('span', { class: 'ngr-floor-author', text: post.author }));
-    }
-    if (post.isOp) meta.appendChild(el('span', { class: 'ngr-pill', text: '楼主' }));
-    if (post.time) meta.appendChild(el('time', { text: compactTime(post.time) }));
-    if (post.recommend) {
-        const recommend = el('span', { class: 'ngr-recommend', title: '赞同数' });
-        recommend.appendChild(icon('heart', 12));
-        recommend.appendChild(el('span', { text: String(post.recommend) }));
-        meta.appendChild(recommend);
-    }
+    joinMeta([
+        post.authorUrl
+            ? el('a', { class: 'ngr-floor-author', href: post.authorUrl, text: post.author })
+            : el('span', { class: 'ngr-floor-author', text: post.author }),
+        post.isOp ? el('span', { class: 'ngr-pill', text: '楼主' }) : null,
+        post.time ? el('time', { text: compactTime(post.time) }) : null,
+        post.recommend ? recommendNode : null,
+    ]).forEach((node) => meta.appendChild(node));
     body.appendChild(meta);
 
     // ---- 小标题（首楼标题与帖子标题重复时不重复展示）----
@@ -105,6 +104,7 @@ function renderFloor(post, ctx, model) {
     content.appendChild(
         sanitizeContent(post.sourceEl, {
             baseUrl: model.url,
+            url: model.url,
             hideImages: ctx.settings.hideImages,
         })
     );

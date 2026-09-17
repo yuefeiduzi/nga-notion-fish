@@ -48,9 +48,8 @@ extension/
   src/core/settings.js   设置的唯一入口（chrome.storage.local，调试时降级 localStorage）
   src/core/dom.js        el()/append()/icon()/shortNumber()/compactTime()
   src/core/diagnose.js   一键导出诊断现场（选择器命中数 + 抽取字段 + 首楼 HTML）
-  src/nga/parse.js       【核心】Document → 模型（选择器表 + 多路兜底 + blocked 识别）
+  src/nga/parse.js       【核心】Document → 模型（站点数据优先 + 选择器兜底 + blocked 识别）
   src/nga/sanitize.js    【核心】正文克隆净化 → 可排版的 DOM
-  src/nga/fetch.js       同源 fetch + DOMParser + 60s 缓存
   src/view/shell.js      外壳：侧边栏、主题开关、应急伪装页、toast
   src/view/parts.js      页头 / 分页器 / 按钮 / 空态
   src/view/{home,board,thread}.js   三类页面的渲染
@@ -59,7 +58,8 @@ extension/
   popup/                 扩展弹窗设置面板
 ```
 
-数据流：`boot.js → app.js → nga/fetch.js → nga/parse.js → view/*.js → DOM`，`nga/sanitize.js` 由 `view/thread.js` 调用。
+数据流：`boot.js → app.js → nga/parse.js → view/*.js → DOM`，`nga/sanitize.js` 由 `view/thread.js` 调用。
+站内跳转是**整页导航**（不是 SPA），新页面由 content script 重新接管。
 
 `dev/` 是调试与参考资料：`dev/README.md` 说明样例页怎么跑；
 `dev/nga-dom-notes.md` 是 NGA 真实结构笔记（每条带出处）；
@@ -72,23 +72,37 @@ extension/
 - **解析层只产出模型**（见 `parse.js` 末尾注释），绝不拼 HTML；排版全在 `view/` + `app.css`。
 - **选择器一律写在 `parse.js` 的 `SEL` 表里**，用 `first()/all()` 多路兜底，不要散落在各处。
 - **`sanitize.js` 的处理顺序不能改**：`convertQuotes/convertCollapse` 必须在 `scrubAttributes` 之前，否则 `.quote` / `.collapse` 类名会被洗掉。
-- **幂等**：站内跳转是 SPA（fetch + 重渲染），任何渲染都必须能重复执行；事件挂在文档级或渲染时重建的节点上，不要往 `window` 上反复绑定。
+- **幂等**：同一页会因「设置变更 / 自愈重渲染」被重复渲染，且跳转后 content script 会重新跑一遍；
+  事件挂在文档级或渲染时重建的节点上，不要往 `window` 上反复绑定。
 - **样式必须能压住原站**：内容区的排版规则写在 `.ngr-content` 下，并显式重置 `div/span/font` 的继承属性；设计 token 用 `--ng-` 前缀，避免与原站变量撞名。
 - 不引入依赖、不引入构建步骤、不发起与原站无关的网络请求。
 
-## 常用 DOM 选择器（详见 `parse.js` 的 SEL 表与 `dev/nga-dom-notes.md`）
+## 常用 DOM 选择器（实测确认，详见 `dev/nga-dom-notes.md`）
 
-- 首页 `/`：`.catenew`、`.catetitle`、`a[href*="fid="]`
-- 列表页 `/thread.php`：`#topicrows` > `table.forumbox`，行 `tr.topicrow` / `tr.row1|row2`，`td.c2 a.topic`（标题）、`td.c2 span[class^="t_k_"]`（标签）、`td.c3 a.author`、`span.silver.postdate`、`td.c4`（回复/浏览）
-- 帖子页 `/read.php`：`#m_posts_c` > `table.postbox`，行 `tr.row1`，作者栏 `td.c1 .posterInfoLine .author` + `[name=uid]`，内容栏 `td.c2` 里的 `#postsubject{N}` / `#postcontent{N}` / `.ubbcode` / `.recommendvalue` / `#postdate{N}`
-- 正文里的：`.quote`（引用）、`.collapse_btn` + `.collapse_content`（折叠）、`[id^="postsign"]` / `.sigline`（签名，要删）、`.comment_c_1|2`（贴条，要删）
-- 导航：`.nav_root` / `.nav_spr` / `.nav_link`
+- 首页 `/`：`.catenew` + `.catetitle`（**标题块与内容块是分离的**，要按文档顺序扫）+ `a[href*="fid="]`
+- 列表页 `/thread.php`：`table#topicrows > tbody > tr.row1|row2.topicrow`；
+  回复数在 `td.c1 a.replies`、标题 `td.c2 a.topic`、标签 `span.titleadd2 a` 或标题内嵌 `span.t_k_c{n}`、
+  作者 `td.c3 a.author`、时间 `td.c3 span.silver.postdate`、最后回复 `td.c4 a.replydate` + `.replyer`
+- 帖子页 `/read.php`：`#m_posts_c > table.forumbox.postbox`（**整页共用一张表**），楼层是 `tr.postrow`；
+  作者 `td.c1 span#posterinfo{N}.posterinfo > a#postauthor{N}.author`；正文是
+  `p#postcontent{N}.postcontent.ubbcode`（**别用 `[id^=postcontent]`，会先命中包装层
+  `#postcontentandsubject{N}`**）；时间 `span#postdate{N}`；标题 `h3#postsubject{N}`
+- 正文里：`.quote`、`.collapse_btn` + `.collapse_content`（内容默认空）、`[id^="postsign"]`（签名，删）、
+  `.comment_c_{1,2}`（贴条，删）、`#postattach`（附件按钮，删）
 - 分页：`[name="pageball"]` / `#pagebar a` / `a[href*="page="]`
 
 ### 两条取数路径（重要）
 
-1. **站点数据（首选，只有当前页面有）**：`window.commonui.postArg.data`（楼层）与 `window.commonui.topicArg.data`（主题列表）直接给出元素与 pid/uid/fid/tid；`window.__PAGE` 给总页数。
-2. **选择器兜底（常态）**：SPA 跳转是 `fetch + DOMParser`，拿不到 `defaultView`，所以没有站点数据。改解析时两条路都要跑：`read.php?...&nopostarg=1` 可以强制走兜底路径。
+1. **站点数据（首选，只有当前页面有）**：`commonui.postArg.data`（楼层：`i`/`pC`/`contentC`/`uInfoC`/
+   `postTime`(unix)/`recommend`/`pid`/`pAid`）、`commonui.topicArg.data`（主题列表数组）、`window.__PAGE`。
+2. **选择器兜底**：站点数据缺失或畸形时用。
+
+### 三条必须守住的时序约束
+
+1. **不能 `window.stop()`**：首页与帖子页的正文都是 NGA 的 JS 注入的，提前掐掉 = 永远空壳。
+2. **解析前要等就绪**：`app.js` 的 `waitForTarget()` —— 帖子页等的不是「行存在」，而是
+   「`contentC` 已经是正文元素」（NGA 先给容器、后给正文）。
+3. **解析后要自愈**：抓到包装层时 `selfHeal()` 会隔 600ms 重解析，最多 8 次。
 
 ## 注意事项
 

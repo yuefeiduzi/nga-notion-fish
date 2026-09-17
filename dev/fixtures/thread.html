@@ -9,11 +9,12 @@
     </head>
     <body>
         <!--
-          本地调试样例。结构按真实 NGA read.php 的组织方式仿写：
-          #m_posts > #m_posts_c > table.forumbox.postbox > tr.row1
-            td.c1(.posterInfoLine > .avatar + .author)  |  td.c2(#postsubject{N} + #postcontent{N} + #postdate{N} + .stat)
-          另外在页面底部伪造了 NGA 自己的 window.commonui.postArg / window.__PAGE，
-          用来验证「优先读站点数据」这条路径。
+          本地调试样例。**层级与类名照抄真实 ngabbs.com read.php**（2026-09 实测）：
+            #m_posts > #m_posts_c > table.forumbox.postbox > tr.postrow[.row1|.row2]（首楼 id=post1strow0）
+              td.c1 > span#posterinfo{N}.posterinfo > a#postauthor{N}.userlink.author > b.block_txt
+              td#postcontainer{N}.c2 > h3#postsubject{N} + p#postcontent{N}.postcontent.ubbcode
+                                        + div#postInfo{N}.postInfo > span#postdate{N}.postinfot.postdatec
+          加 ?nopostarg=1 可跳过下面的伪站数据，单独验证选择器兜底路径。
         -->
         <div id="mmc">
             <div class="nav">
@@ -24,203 +25,92 @@
                 <a class="nav_link" href="/read.php?tid=1234567">[攻略] 12 层满星配队与轴表整理（9 月版本）</a>
             </div>
 
-            <div id="m_posts">
-                <div id="m_posts_c">
-                    <table class="forumbox postbox">
+            <div id="m_posts" class="module_wrap">
+                <div id="m_posts_c" class="w100">
+                    <table class="forumbox postbox" cellspacing="1px">
                         <tbody>
-                            <tr class="row1" data-pid="987654321">
-                                <td class="c1 postauthor">
-                                    <span class="posterInfoLine">
-                                        <span class="avatar"><img src="/dev/fixtures/avatar.png" alt="头像" /></span>
-                                        <a class="author" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a>
-                                        <span name="uid" class="hidden">33123456</span>
+                            <tr id="post1strow0" class="postrow row2">
+                                <td class="c1">
+                                    <span id="posterinfo0" class="posterinfo">
+                                        <a id="postauthor0" class="userlink author" href="/nuke.php?func=ucp&uid=33123456"><b class="block_txt">猫猫头实验体</b></a>
+                                        <img id="posteravatar0" class="avatar" src="/dev/fixtures/avatar.png" alt="" />
+                                        <div class="stat"><div class="stat_spacer"></div></div>
                                     </span>
-                                    <div class="stat"><span class="stat_spacer"></span>注册 2011-05-01</div>
                                 </td>
-                                <td class="c2">
-                                    <div class="postsubject" id="postsubject0">[攻略] 12 层满星配队与轴表整理（9 月版本）</div>
-                                    <div class="postcontent" id="postcontent0">
-                                        <div class="ubbcode">
-                                            这次深渊 12 层换了新的机制，上半的护盾是<b>反击型</b>，所以
-                                            <font color="#ff6600">不要带高频普攻角色</font>，否则盾反会直接把主 C 打残。
-                                            <br /><br />
-                                            先说结论，稳定满星的三种配队：
-                                            <ul>
-                                                <li>双雷 + 护盾：最稳，容错高，适合手残</li>
-                                                <li>雷火超载：上限高，但需要卡轴</li>
-                                                <li>单雷单水：本期下半最优解</li>
-                                            </ul>
-                                            <div class="quote">
-                                                <b>Post by <a href="/nuke.php?func=ucp&uid=32001234">隔壁老王</a> (2026-09-12 09:12):</b><br />
-                                                12 层是不是不打满也能拿完奖励？
-                                            </div>
-                                            回答上面的问题：能，但会少 150 原石，看你在不在意。<br />
-                                            <br />
-                                            轴表（上半）：
-                                            <table border="1" cellspacing="0">
-                                                <tr>
-                                                    <th>时间</th>
-                                                    <th>动作</th>
-                                                    <th>备注</th>
-                                                </tr>
-                                                <tr>
-                                                    <td>0s</td>
-                                                    <td>开 E 吃球</td>
-                                                    <td>必须站桩 1 秒</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>6s</td>
-                                                    <td>切人开大</td>
-                                                    <td>注意打断</td>
-                                                </tr>
-                                            </table>
-                                            <br />
-                                            走位示意图：
-                                            <img src="about:blank" data-src="/dev/fixtures/route.png" width="720" height="405" alt="走位示意图" />
-                                            <br />
-                                            <div class="collapse_btn" onclick="void 0">展开：下半具体循环</div>
-                                            <div class="collapse_content" style="display: none">
-                                                下半先切辅助上减抗，再进主 C 的爆发窗口，循环 2 次即可。
-                                                <img src="about:blank" data-src="/dev/fixtures/loop.png" alt="循环图" />
-                                            </div>
-                                            <br />
-                                            代码化之后的循环（方便抄作业）：
-                                            <pre><code>for (int i = 0; i &lt; 2; i++) {
-    castSkill("E");
-    swapTo("main");
-    burst();
-}</code></pre>
-                                            表情测试：<img src="/dev/fixtures/smile.gif" alt="笑" width="20" height="20" />
-                                            <br />
-                                            原始数据来源：<a href="https://example.com/axis-table" target="_blank">example.com 轴表</a>
-                                            <div class="comment_c_1">
-                                                <div class="comment_body">贴条：这条应该被清理掉。</div>
-                                            </div>
-                                            <div id="postsign0" class="postsign">—— 签名：猫猫头摸鱼中</div>
-                                        </div>
+                                <td id="postcontainer0" class="c2">
+                                    <a id="pid0Anchor"></a>
+                                    <div id="postBtnPos0" class="postBtnPos"></div>
+                                    <div id="postInfo0" class="postInfo">
+                                        <a class="postinfot" href="/thread.php?fid=-7">[游戏综合讨论]</a>
+                                        <span id="postdate0" class="postinfot postdatec stxt">2026-09-14 12:33</span>
                                     </div>
-                                    <span class="silver" id="postdate0">2026-09-14 12:33</span>
-                                    <div class="subtitle">本帖最后由 猫猫头实验体 于 2026-09-14 12:40 编辑</div>
-                                    <div class="stat"><span class="recommendvalue">+128</span></div>
+                                    <h3 id="postsubject0">[攻略] 12 层满星配队与轴表整理（9 月版本）</h3>
+                                    <p id="postcontent0" class="postcontent ubbcode"></p>
+                                    <div id="postsign0" class="postsignC">
+                                        <span class="sigline"><span class="en_font xtxt">NGABBS.COM</span></span>
+                                        <div class="sign ubbcode" id="postsigncontent0">—— 签名：猫猫头摸鱼中</div>
+                                    </div>
                                 </td>
                             </tr>
-                        </tbody>
-                    </table>
 
-                    <table class="forumbox postbox">
-                        <tbody>
-                            <tr class="row2" data-pid="987654322">
-                                <td class="c1 postauthor">
-                                    <span class="posterInfoLine">
-                                        <span class="avatar"><img src="/dev/fixtures/avatar.png" alt="头像" /></span>
-                                        <a class="author" href="/nuke.php?func=ucp&uid=32001234">隔壁老王</a>
+                            <tr class="postrow row1">
+                                <td class="c1">
+                                    <span id="posterinfo1" class="posterinfo">
+                                        <a id="postauthor1" class="userlink author" href="/nuke.php?func=ucp&uid=32001234"><b class="block_txt">隔壁老王</b></a>
                                     </span>
                                 </td>
-                                <td class="c2">
-                                    <div class="postsubject" id="postsubject1" style="display: none">Re：[攻略] 12 层满星配队与轴表整理（9 月版本）</div>
-                                    <div class="postcontent" id="postcontent1">
-                                        <div class="ubbcode">
-                                            感谢整理，按这个轴打了两遍就满了。<br />
-                                            补充一个细节：如果队伍里没有减抗，6 秒那一刀会差 3% 血量，可以考虑把爆发提前到 5.5 秒。
-                                        </div>
+                                <td id="postcontainer1" class="c2">
+                                    <a id="pid1Anchor"></a>
+                                    <div id="postInfo1" class="postInfo">
+                                        <span id="postdate1" class="postinfot postdatec stxt">2026-09-14 12:41</span>
                                     </div>
-                                    <span class="silver" id="postdate1">2026-09-14 12:41</span>
-                                    <div class="stat"><span class="recommendvalue">+42</span></div>
+                                    <p id="postcontent1" class="postcontent ubbcode"></p>
                                 </td>
                             </tr>
-                        </tbody>
-                    </table>
 
-                    <table class="forumbox postbox">
-                        <tbody>
-                            <tr class="row1" data-pid="987654323">
-                                <td class="c1 postauthor">
-                                    <span class="posterInfoLine">
-                                        <a class="author" href="/nuke.php?func=ucp&uid=31009988">深渊打工仔</a>
+                            <tr class="postrow row2">
+                                <td class="c1">
+                                    <span id="posterinfo2" class="posterinfo">
+                                        <a id="postauthor2" class="userlink author" href="/nuke.php?func=ucp&uid=31009988"><b class="block_txt">深渊打工仔</b></a>
                                     </span>
                                 </td>
-                                <td class="c2">
-                                    <div class="postcontent" id="postcontent2">
-                                        <div class="ubbcode">
-                                            <div class="quote"><b>Post by 猫猫头实验体 (2026-09-14 12:33):</b><br />双雷 + 护盾：最稳，容错高，适合手残</div>
-                                            这句话我不太同意，双雷的充能需求很高，练度不够的话反而更难受。<br /><br />
-                                            <div class="quote">
-                                                <b>Post by 隔壁老王 (2026-09-14 12:41):</b><br />
-                                                <div class="quote"><b>Post by 猫猫头实验体 (2026-09-14 12:33):</b><br />不要带高频普攻角色</div>
-                                                嵌套引用测试
-                                            </div>
-                                            总之还是看自己的队伍池，别硬抄。
-                                        </div>
+                                <td id="postcontainer2" class="c2">
+                                    <a id="pid2Anchor"></a>
+                                    <div id="postInfo2" class="postInfo">
+                                        <span id="postdate2" class="postinfot postdatec stxt">2026-09-14 13:02</span>
                                     </div>
-                                    <span class="silver" id="postdate2">2026-09-14 13:02</span>
-                                    <div class="stat"><span class="recommendvalue">+7</span></div>
+                                    <p id="postcontent2" class="postcontent ubbcode"></p>
                                 </td>
                             </tr>
-                        </tbody>
-                    </table>
 
-                    <table class="forumbox postbox">
-                        <tbody>
-                            <tr class="row2" data-pid="987654324">
-                                <td class="c1 postauthor">
-                                    <span class="posterInfoLine">
-                                        <a class="author" href="/nuke.php?func=ucp&uid=33556677">手残本残</a>
+                            <tr class="postrow row1">
+                                <td class="c1">
+                                    <span id="posterinfo3" class="posterinfo">
+                                        <a id="postauthor3" class="userlink author" href="/nuke.php?func=ucp&uid=33556677"><b class="block_txt">手残本残</b></a>
                                     </span>
                                 </td>
-                                <td class="c2">
-                                    <div class="postcontent" id="postcontent3">
-                                        <div class="ubbcode">
-                                            手残表示 6 秒那一刀永远打不中，有没有更宽容的轴……<br />
-                                            顺便问一下图里的走位是必须的吗？<img src="about:blank" data-src="/dev/fixtures/position.png" alt="走位图" />
-                                        </div>
+                                <td id="postcontainer3" class="c2">
+                                    <a id="pid3Anchor"></a>
+                                    <div id="postInfo3" class="postInfo">
+                                        <span id="postdate3" class="postinfot postdatec stxt">2026-09-14 13:20</span>
                                     </div>
-                                    <span class="silver" id="postdate3">2026-09-14 13:20</span>
-                                    <div class="stat"><span class="recommendvalue">+1</span></div>
+                                    <p id="postcontent3" class="postcontent ubbcode"></p>
                                 </td>
                             </tr>
-                        </tbody>
-                    </table>
 
-                    <table class="forumbox postbox">
-                        <tbody>
-                            <tr class="row1" data-pid="987654325">
-                                <td class="c1 postauthor">
-                                    <span class="posterInfoLine">
-                                        <a class="author" href="/nuke.php?func=ucp&uid=33123456">猫猫头实验体</a>
+                            <tr class="postrow row2">
+                                <td class="c1">
+                                    <span id="posterinfo4" class="posterinfo">
+                                        <a id="postauthor4" class="userlink author" href="/nuke.php?func=ucp&uid=33998877"><b class="block_txt">路过的猫</b></a>
                                     </span>
                                 </td>
-                                <td class="c2">
-                                    <div class="postcontent" id="postcontent4">
-                                        <div class="ubbcode">
-                                            不是必须的，那两张图只是解释护盾的判定范围：<br />
-                                            <b>半径 3 米内</b>才会反弹，所以贴着边输出就行。<br />
-                                            更宽容的轴可以看下半的循环，把爆发放在 7 秒，损失一点点上限但基本不会空。
-                                        </div>
+                                <td id="postcontainer4" class="c2">
+                                    <a id="pid4Anchor"></a>
+                                    <div id="postInfo4" class="postInfo">
+                                        <span id="postdate4" class="postinfot postdatec stxt">2026-09-14 14:05</span>
                                     </div>
-                                    <span class="silver" id="postdate4">2026-09-14 13:35</span>
-                                    <div class="stat"><span class="recommendvalue">+19</span></div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <table class="forumbox postbox">
-                        <tbody>
-                            <tr class="row2" data-pid="987654326">
-                                <td class="c1 postauthor">
-                                    <span class="posterInfoLine">
-                                        <a class="author" href="/nuke.php?func=ucp&uid=33998877">路过的猫</a>
-                                    </span>
-                                </td>
-                                <td class="c2">
-                                    <div class="postcontent" id="postcontent5">
-                                        <div class="ubbcode">
-                                            前排提醒：本期的成就「不动如山」要求在护盾反弹前不移动，记得单独打一遍。<br />
-                                            参考 <a href="/read.php?tid=7654321">上期的成就攻略</a>
-                                        </div>
-                                    </div>
-                                    <span class="silver" id="postdate5">2026-09-14 14:05</span>
-                                    <div class="stat"><span class="recommendvalue">+3</span></div>
+                                    <p id="postcontent4" class="postcontent ubbcode"></p>
+                                    <div class="comment_c_1"><div class="comment_body">贴条：这条应该被清理掉。</div></div>
                                 </td>
                             </tr>
                         </tbody>
@@ -237,24 +127,112 @@
             </div>
         </div>
 
+        <!--
+          正文块放在 <template> 里、再由脚本 innerHTML 注入 —— 复刻真实 NGA：
+          它的楼层正文是 JS 写进 p#postcontent[N] 的，所以 <div class="quote"> 这类块级元素
+          真的能待在 <p> 里。静态 HTML 做不到这一点（HTML parser 遇到块级元素会自动闭合 <p>，
+          后面的内容被"顶"到 <p> 外面），拿静态 fixture 测会得到假的失败。
+        -->
+        <template id="content0">
+                                        这次深渊 12 层换了新的机制，上半的护盾是<b>反击型</b>，所以
+                                        <font color="#ff6600">不要带高频普攻角色</font>，否则盾反会直接把主 C 打残。
+                                        <br /><br />
+                                        先说结论，稳定满星的三种配队：
+                                        <ul>
+                                            <li>双雷 + 护盾：最稳，容错高，适合手残</li>
+                                            <li>雷火超载：上限高，但需要卡轴</li>
+                                            <li>单雷单水：本期下半最优解</li>
+                                        </ul>
+                                        <div class="quote" style="background-color:#f9efd6">
+                                            <b>Post by <a href="/nuke.php?func=ucp&uid=32001234">隔壁老王</a> (2026-09-12 09:12):</b><br />
+                                            12 层是不是不打满也能拿完奖励？
+                                        </div>
+                                        回答上面的问题：能，但会少 150 原石，看你在不在意。<br /><br />
+                                        轴表（上半）：
+                                        <table border="1" cellspacing="0">
+                                            <tr>
+                                                <th>时间</th>
+                                                <th>动作</th>
+                                                <th>备注</th>
+                                            </tr>
+                                            <tr>
+                                                <td>0s</td>
+                                                <td>开 E 吃球</td>
+                                                <td>必须站桩 1 秒</td>
+                                            </tr>
+                                        </table>
+                                        <br />
+                                        走位示意图：
+                                        <img src="/dev/fixtures/route.png" data-argi="0" data-srcorg="" alt="走位示意图" />
+                                        <br />
+                                        <!-- 实测：折叠内容默认是空的，点击才由 NGA 的 JS 去拉 -->
+                                        <div class="collapse_btn"><button onclick="void 0" type="button" name="collapseSwitchButton">+</button> 展开：下半具体循环</div>
+                                        <div class="collapse_content" style="display:none"></div>
+                                        <br />
+                                        循环代码：
+                                        <pre><code>for (int i = 0; i &lt; 2; i++) {
+    castSkill("E");
+}</code></pre>
+                                        表情测试：<img src="/dev/fixtures/smile.gif" alt="笑" width="20" height="20" />
+                                        <br />
+                                        原始数据来源：<a href="https://example.com/axis-table" target="_blank">example.com 轴表</a>
+                                        <h4 class="silver subtitle postbodysubtitle">附件</h4>
+                                        <span id="postattach0"><a href="javascript:void(0)" class="contentFullWidthButton" onclick="void 0">展开附件</a></span>
+                                    
+        </template>
+        <template id="content1">
+                                        感谢整理，按这个轴打了两遍就满了。<br />
+                                        补充一个细节：如果队伍里没有减抗，6 秒那一刀会差 3% 血量，可以考虑把爆发提前到 5.5 秒。
+                                    
+        </template>
+        <template id="content2">
+                                        <div class="quote">
+                                            <b>Post by 猫猫头实验体 (2026-09-14 12:33):</b><br />双雷 + 护盾：最稳，容错高，适合手残
+                                        </div>
+                                        这句话我不太同意，双雷的充能需求很高，练度不够的话反而更难受。<br /><br />
+                                        <div class="quote">
+                                            <b>Post by 隔壁老王 (2026-09-14 12:41):</b><br />
+                                            <div class="quote"><b>Post by 猫猫头实验体 (2026-09-14 12:33):</b><br />不要带高频普攻角色</div>
+                                            嵌套引用测试
+                                        </div>
+                                        总之还是看自己的队伍池，别硬抄。
+                                    
+        </template>
+        <template id="content3">
+                                        手残表示 6 秒那一刀永远打不中，有没有更宽容的轴……<br />
+                                        顺便问一下图里的走位是必须的吗？<img src="/dev/fixtures/position.png" alt="走位图" />
+                                    
+        </template>
+        <template id="content4">
+                                        前排提醒：本期的成就「不动如山」要求在护盾反弹前不移动，记得单独打一遍。<br />
+                                        参考 <a href="/read.php?tid=7654321">上期的成就攻略</a>
+                                    
+        </template>
+
         <script>
-            // 伪造 NGA 自己的页面数据（真实站点上由 NGA 的 JS 挂上去）
-            // 加 ?nopostarg=1 可跳过，用来单独验证选择器兜底路径
+            Array.prototype.forEach.call(document.querySelectorAll('template[id^="content"]'), function (tpl) {
+                var index = tpl.id.replace('content', '');
+                var target = document.getElementById('postcontent' + index);
+                if (target) target.innerHTML = tpl.innerHTML;
+            });
+        </script>
+
+        <script>
+            // 伪造 NGA 自己挂在页面上的数据（真实站点由 NGA 的 JS 构建）
             (function () {
                 if (/nopostarg=1/.test(location.search)) return;
-                var rows = document.querySelectorAll('table.postbox');
                 var data = {};
-                rows.forEach(function (table, index) {
-                    var authorBlock = table.querySelector('.posterInfoLine');
-                    var authorLink = table.querySelector('.posterInfoLine .author');
+                var rows = document.querySelectorAll('tr.postrow');
+                rows.forEach(function (row, index) {
+                    var uid = row.querySelector('.posterinfo .author');
                     data[index] = {
-                        pid: Number(table.querySelector('tr').getAttribute('data-pid') || 0),
-                        pAid: Number((authorLink.getAttribute('href').match(/uid=(\d+)/) || [])[1] || 0),
+                        pid: 987654321 + index,
+                        pAid: Number((uid.getAttribute('href').match(/uid=(\d+)/) || [])[1] || 0),
                         i: index,
                         lite: false,
-                        uInfoC: authorBlock,
-                        subjectC: table.querySelector('.postsubject'),
-                        contentC: table.querySelector('.postcontent'),
+                        uInfoC: row.querySelector('.posterinfo'),
+                        subjectC: row.querySelector('[id^="postsubject"]'),
+                        contentC: row.querySelector('[id^="postcontent"]'),
                     };
                 });
                 window.commonui = window.commonui || {};

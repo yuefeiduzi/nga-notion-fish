@@ -4,7 +4,7 @@
  */
 
 import { el, icon, compactTime, shortNumber } from '../core/dom.js';
-import { pageHead, pager, button, emptyState } from './parts.js';
+import { pageHead, pager, button, emptyState, joinMeta } from './parts.js';
 
 export function renderBoard(model, ctx) {
     const wrap = el('div', { class: 'ngr-page ngr-board' });
@@ -56,18 +56,18 @@ export function renderBoard(model, ctx) {
 
         body.appendChild(el('h2', { class: 'ngr-thread-title', text: thread.title }));
 
+        const replies = el('span', { class: 'ngr-num' });
+        replies.appendChild(icon('list', 12));
+        replies.appendChild(el('span', { text: ` ${shortNumber(thread.replies)} 回复` }));
+
         const meta = el('div', { class: 'ngr-thread-meta' });
-        if (thread.author) meta.appendChild(el('span', { text: thread.author }));
-        if (thread.time) meta.appendChild(el('time', { text: compactTime(thread.time) }));
-        if (thread.replies != null) {
-            const replies = el('span', { class: 'ngr-num' });
-            replies.appendChild(icon('list', 12));
-            replies.appendChild(el('span', { text: ` ${shortNumber(thread.replies)} 回复` }));
-            meta.appendChild(replies);
-        }
-        if (thread.views) {
-            meta.appendChild(el('span', { class: 'ngr-num', text: `${shortNumber(thread.views)} 阅` }));
-        }
+        joinMeta([
+            thread.author ? el('span', { text: thread.author }) : null,
+            thread.time ? el('time', { text: compactTime(thread.time) }) : null,
+            thread.replies != null ? replies : null,
+            thread.views ? el('span', { class: 'ngr-num', text: `${shortNumber(thread.views)} 阅` }) : null,
+            thread.lastReply ? el('span', { class: 'ngr-num', text: `最后回复 ${thread.lastReply}` }) : null,
+        ]).forEach((node) => meta.appendChild(node));
         if (meta.childNodes.length) body.appendChild(meta);
 
         if (thread.excerpt) body.appendChild(el('p', { class: 'ngr-thread-excerpt', text: thread.excerpt }));
