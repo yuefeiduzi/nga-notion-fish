@@ -7,6 +7,9 @@
 import { el, append, icon, origin } from '../core/dom.js';
 import { copyDiagnostics } from '../core/diagnose.js';
 
+/** 侧边栏左上角的品牌名。注意：设置里的 `brandText` 是另一件事——那是应急伪装用的标签页标题 */
+const BRAND = 'NGA 阅读器';
+
 export function createShell(ctx) {
     const root = el('div', { id: 'ngr-root' });
     const side = el('aside', { class: 'ngr-side' });
@@ -54,7 +57,7 @@ export function createShell(ctx) {
             'a',
             { class: 'ngr-brand', href: '/', title: '回到板块首页' },
             el('span', { class: 'ngr-brand-mark', text: 'R' }),
-            el('span', { text: settingsNow.brandText || '阅读器' })
+            el('span', { text: BRAND })
         );
         brand.addEventListener('click', (event) => {
             event.preventDefault();

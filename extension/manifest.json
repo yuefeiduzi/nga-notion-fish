@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "阅读器 Reader",
-    "version": "0.4.2",
-    "description": "把 NGA 论坛转换成干净的资讯阅读界面：侧边栏导航 + 数字编号的楼层正文，支持暗色模式与无图模式。",
+    "name": "NGA 阅读器",
+    "version": "0.5.0",
+    "description": "把 NGA 论坛（ngabbs.com / bbs.nga.cn）读成一份资讯日报：侧边栏导航 + 数字编号的楼层正文，支持暗色模式、无图模式与图片全屏预览。",
     "minimum_chrome_version": "111",
     "permissions": [
         "storage"
@@ -47,7 +47,7 @@
         }
     ],
     "action": {
-        "default_title": "阅读器设置",
+        "default_title": "NGA 阅读器 · 设置",
         "default_popup": "popup/popup.html"
     }
 }
