@@ -45,6 +45,17 @@
 
 需要回复/点赞时，点阅读页头部的「原站」按钮，会在原站打开同一页（可在 popup 里重新开启阅读模式）。
 
+## 出问题时
+
+1. **临时绕过**：popup 里关掉「阅读模式」；或在当前地址后面加 `?ngr=off`（本次会话都不再接管，回原站）。
+2. **拿到现场**：点侧边栏「更多 → 复制诊断信息」（或兜底页上的「复制诊断」），
+   会把 URL、DOM 选择器命中数、抽到的字段和第一楼 HTML 复制到剪贴板。
+   直接提交 issue 时贴上这段文本，比截图有用得多。
+3. **白屏**：说明“先藏后画”的标记没被摘掉，看看 DevTools Console 的第一条报错。
+
+> 目前已知的未验证项：发帖时间字段位置、赞同数形态、图片懒加载属性 —— 这几处
+> 只能在同一账号的真机上核对，已列入 [TODO.md](TODO.md) 的验收清单。
+
 ## 目录结构
 
 ```
@@ -69,7 +80,7 @@ nga-notion-fish/
 │   ├── nga-dom-notes.md         # NGA 真实结构笔记（逐条带出处）
 │   └── reference/               # 8 个第三方 NGA 用户脚本源码（仅供核对选择器）
 ├── assets/                      # README 预览图
-├── legacy/                      # 旧的 Tampermonkey 用户脚本（v0.2，已被扩展取代）
+├── legacy/                      # 旧的 Tampermonkey 用户脚本（v0.2，已被扩展取代，仅存档）
 └── docs/                        # 本地笔记（gitignore）
 ```
 
@@ -100,7 +111,7 @@ http://127.0.0.1:8765/read.php?tid=1234567&nopostarg=1
 
 - **必须登录**：NGA 对访客返回 `ERROR:15`，未登录时阅读模式会给出引导登录的提示页。
 - **只读**：回复、点赞、私信等交互仍在原站完成。
-- 解析依赖 NGA 现有 DOM 结构（`table.forumbox`、`[id^="post1strow"]`、`[id*="postcontent"]` 等），NGA 改版时可能需要调整 `src/nga/parse.js` 里的选择器表。
+- 解析依赖 NGA 现有 DOM 结构（`table.forumbox`、`[id^="post1strow"]`、`[id*="postcontent"]` 等），NGA 改版时可能需要调整 `extension/src/nga/parse.js` 里的选择器表。
 - 目前覆盖首页 / 板块页 / 帖子页三类页面，搜索页、用户页等仍走原站。
 
 ## License

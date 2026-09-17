@@ -1,4 +1,8 @@
-# Greasy Fork 发布说明
+# Greasy Fork 发布说明（历史存档）
+
+> **这是旧 Tampermonkey 用户脚本（`legacy/nga-notion.user.js`）当时的发布文案，已经不再维护。**
+> 新的 Chrome 扩展见仓库根目录的 [README.md](../README.md)，安装方式、快捷键、功能都在那里。
+> 这份文件只作为历史记录保留（当时的版式想法、板块清单）。
 
 ## 脚本信息
 
