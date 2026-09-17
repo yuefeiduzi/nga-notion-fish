@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "阅读器 Reader",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "description": "把 NGA 论坛转换成干净的资讯阅读界面：侧边栏导航 + 数字编号的楼层正文，支持暗色模式与无图模式。",
     "minimum_chrome_version": "111",
     "permissions": [
