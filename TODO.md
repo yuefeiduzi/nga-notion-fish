@@ -91,6 +91,24 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 
 ## 待办
 
+### 版本与状态
+
+- 版本号只写在 `extension/manifest.json`（打包脚本、popup 底部、诊断信息都从它读，不手写第二份）。
+  改完 manifest 要在 `chrome://extensions` 点**重新加载**才生效（改 `src/**` 只要刷新页面）。
+- 侧面能看版本号的地方：popup 底部右下角、「复制诊断信息」第一行（样例页 harness 里显示 `dev`）。
+
+### 用出来的三个问题（2026-09-17，已在真机修完，版本 0.5.2）
+
+- [x] 侧边栏「内容」里那条「最近浏览」删掉 —— 下面本来就有「最近」列表，重复（`view/shell.js`）
+- [x] 合集（子版块）行认出来：列表页里标题链到 `thread.php?stid=…` 的行都是合集映射
+      （`tr.set_topic` + 「合集」标记），现在带「合集」标签、不编造回复数（`parse.js` / `view/board.js`）
+- [x] 合集页能回到上一个版面：面包屑里末级是合集、上一级是母版块，
+      现在侧边栏「板块」里同时列出母版块 + 合集，页头 kicker 也是可点的母版块链接
+      （顺带修了面包屑去重把 `?fid=` 与 `?stid=` 当成同一条的 bug，以及合集页拿不到名字退回成「阅读器」的问题）
+- [x] 「刷新一下跳到第 2、3 页」：原站被藏起来但 JS 还在跑，滚轮会触发它的「上拉翻页」，
+      把下一页 AJAX 拉回来并 `history.pushState` 改地址栏 → 现在在捕获阶段把手势闸掉
+      （`app.js` 的 `muteHiddenGestures`，真机已验证）；顺手把原站的插播广告中转页弹回原地址
+
 ### 上架（Chrome Web Store / Edge Add-ons）
 
 仓库侧已经备齐（2026-09）：
@@ -115,6 +133,12 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 - [ ] 上架后：NGA 改结构会导致解析失效，需要能快速发版；UI 改了记得重截 `store/images/`
 
 ### 内容与解析
+- [ ] **站点数据这条路在扩展里其实是死的**（2026-09-17 实测）：内容脚本跑在隔离世界，
+      `window.commonui` / `window.__PAGE` 在扩展的世界里是 `undefined`（`Runtime.evaluate` 到
+      扩展的 executionContext 验证过），所以 `parse.js` 的「首选站点数据」永远拿不到，一直在走选择器兜底。
+      影响：赞数（`recommend`）、`pid`、`floor` 这些只有站点数据才稳。修法：加一个
+      `world: "MAIN"` 的小桥接脚本（或 `chrome.scripting` 注 main world），把 `postArg/topicArg/__PAGE`
+      通过 `postMessage`/`CustomEvent` 递过来；顺带 `waitForTarget()` 的 `isPostContentReady()` 也能真正生效。
 - [ ] 楼层号：目前按 20 楼/页推算，还没在第 N 页（非首页）上核对过
 - [ ] `postBtnPos` 里的赞踩按钮是 JS 后填的，真机上常为空（赞数改用站点数据 `recommend`）
 - [ ] 引用块里的图拿不到地址（原站把它裁掉了），现在是「点击加载」占位点了没反应
@@ -123,6 +147,7 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 - [ ] 表情 alt（如 `咦`）现在是图片加载失败的兜底，可以考虑失败时直接显示 `[咦]` 文字
 
 ### 体验
+- [ ] 合集页里也放一个「收藏母版块」按钮（现在只有侧边栏里的母版块链接）
 - [ ] 楼层锚点跳转（`#pid` / 跳楼输入框）与「本页楼层目录」
 - [ ] 收藏板块支持分组排序、拖拽调整
 - [ ] 阅读进度记忆（记住上次读到的楼层）
@@ -145,11 +170,30 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 - `/` → 首页；`/thread.php?fid=` → 板块页；`/read.php?tid=` → 帖子页；其它 → 保持原站
 - 访客被拦：标题为「未登录」/「访客不能直接访问」，正文含 `ERROR:1` / `ERROR:15`
 
-### NGA 自带数据（当前页面才有）
+### NGA 自带数据（只有 dev 样例页能拿到，见下面「隔离世界」）
 - `window.commonui.postArg.data[i]`：`pid` / `pAid` / `i`（楼层序号）/ `contentC` / `subjectC` / `uInfoC`
 - `window.commonui.topicArg.data[i]`：数组，`[1]` 标题元素、`[2]` 作者元素、`[7]` fid、`[8]` tid
-- `window.__PAGE = [url, 总页数, 当前页, …]`
+  （合集行的 `[8]` 给的是 **stid**，`[7]` 是母版块的 fid）
+- `window.__PAGE`：**两种页面都是对象**（不是数组，所以 `parsePageInfo` 的 `Array.isArray` 判定
+  正好让 `__PAGE[1]` 用不上）：列表页 `{0:url, 1:主题总数, 2:当前页, 3:每页主题数}`
+  （fid=422 实测 `1:16784`），帖子页 `{0:url, 1:总页数, 2:当前页, 3:每页楼数}`（实测 `1:2`）。
+  含义不一样，别拿 `[1]` 当统一的「总页数」—— 现在页数是从分页链接/标题里数出来的。
 - 加 `?nopostarg=1` 打开样例页可强制走选择器兜底路径
+
+### 隔离世界（2026-09-17 实测，会影响架构）
+- 内容脚本在**隔离世界**：`window.commonui` / `window.__PAGE` 一律 `undefined`
+  （用 CDP `Runtime.evaluate` + `contextId` 分别读两个世界验证过）。
+  ⇒ `parse.js` 里的站点数据路径**只在 `dev/` 样例页（主世界）生效**，扩展里一直走选择器兜底。
+  ⇒ 同理，改原站的函数（`commonui.pageBtn.continueNext`）是白费力气，只能从事件层拦。
+
+### 原站在我们背后做什么（都在真机上复现/验证过）
+- **上拉翻页**（`js_default.js` 的 `mousewheel`/`touchmove` 手势）：滚到屏幕下端再往下，
+  它 `loadReadHidden` 拉下一页 + `history.pushState('…&page=2')`。我们的滚动条不在 window 上，
+  它判断「到底」永远成立 ⇒ 滚几下地址栏就变成第 2、3 页，接着点刷新就「跳页」了。
+  修法：`app.js` 的 `muteHiddenGestures()` 在捕获阶段 `stopPropagation()`（不影响原生滚动）。
+- **插播广告页**（`js_default.js` 的 `commonui.insAdsChk`）：按 cookie 计数
+  `location.replace('/misc/adpage_insert_2.html?' + location.href)`，整页被换成广告中转页。
+  它自己的 `getJump()` 会跳回原地址，我们接管前先弹回去（`app.js` 的 `adBounceUrl`）。
 
 ### 图片与表情（都是真机实测，详见 `dev/nga-dom-notes.md`）
 - 原站 JS（`ubbcode.adjImgSize`）**会改写我们渲染出来的图**：写内联 `max-width:<原站布局宽度>px`

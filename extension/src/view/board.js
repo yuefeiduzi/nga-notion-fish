@@ -14,6 +14,8 @@ export function renderBoard(model, ctx) {
     wrap.appendChild(
         pageHead({
             kicker: [
+                // 合集（子集）页：把母版块放在前面，点一下就能回去
+                board.parent ? { text: board.parent.name, url: board.parent.url } : null,
                 board.name ? { text: board.name, url: '' } : { text: '板块' },
                 model.page.max > 1 ? { time: `${model.page.current} / ${model.page.max} 页` } : null,
             ],
@@ -21,7 +23,7 @@ export function renderBoard(model, ctx) {
             meta: [
                 `${model.threads.length} 个主题`,
                 model.page.max > 1 ? `第 ${model.page.current} 页` : null,
-                board.fid ? `fid ${board.fid}` : null,
+                board.stid ? `stid ${board.stid}` : board.fid ? `fid ${board.fid}` : null,
             ],
             actions: [
                 board.fid
@@ -51,6 +53,15 @@ export function renderBoard(model, ctx) {
 
         const top = el('div', { class: 'ngr-thread-top' });
         if (thread.isPinned) top.appendChild(el('span', { class: 'ngr-tag is-pinned', text: '置顶' }));
+        if (thread.isSubset) {
+            top.appendChild(
+                el('span', {
+                    class: 'ngr-tag is-subset',
+                    text: '合集',
+                    title: '这是一个合集（子版块），点开是它自己的主题列表',
+                })
+            );
+        }
         if (thread.tag) top.appendChild(el('span', { class: 'ngr-tag', text: thread.tag }));
         if (top.childNodes.length) body.appendChild(top);
 

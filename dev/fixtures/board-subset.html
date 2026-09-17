@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <title>《黑暗帝国的统治》前瞻 - NGA玩家社区</title>
+        <link rel="icon" href="data:," />
+        <link rel="stylesheet" href="/src/styles/boot.css" />
+        <link rel="stylesheet" href="/src/styles/app.css" />
+    </head>
+    <body>
+        <!--
+          本地调试样例：**合集（子版块）页** thread.php?stid=…（由 dev/server.py 按 ?stid= 映射过来）。
+
+          为什么需要这一页：列表页里有「看着像帖子、其实是子版块映射」的行
+          （标题链到 thread.php?stid=…，见 board.html 里那行 set_topic），点进去之后
+          面包屑要能带上一级（母版块），否则用户没有回到母版块的路。
+
+          ⚠️ 面包屑层级按「母版块 > 合集」仿写（含 nav_link 的 stid 链接），
+          这一点尚未在登录态真机上逐条核对（真实页面若只有母版块一级，解析层会退回用标题当名字）。
+          其余类名与层级同 board.html（出处见 dev/nga-dom-notes.md）。
+        -->
+        <div id="mmc">
+            <div class="nav">
+                <a class="nav_root" href="/">NGA</a>
+                <span class="nav_spr">-</span>
+                <a class="nav_link" href="/thread.php?fid=-7">游戏综合讨论</a>
+                <span class="nav_spr">-</span>
+                <a class="nav_link" href="/thread.php?stid=47554235">《黑暗帝国的统治》前瞻</a>
+            </div>
+
+            <table id="topicrows" class="forumbox">
+                <tbody>
+                    <tr class="row1 topicrow">
+                        <td class="c1"><a id="t_rc1_0" class="replies" href="/read.php?tid=2000001">12</a></td>
+                        <td class="c2">
+                            <a id="t_tt1_0" class="topic" href="/read.php?tid=2000001">合集索引：新版本改动一览（持续更新）</a>
+                        </td>
+                        <td class="c3">
+                            <a id="t_ta0" class="author" href="/nuke.php?func=ucp&uid=5490871"><b class="block_txt">忧郁俯卧撑</b></a>
+                            <span id="t_pt1_0" class="silver postdate">2026-09-14 11:36</span>
+                        </td>
+                        <td class="c4">
+                            <a id="t_rt1_0" class="silver replydate" title="26-09-14 15:02" href="/read.php?tid=2000001">15:02</a>
+                            <span class="replyer" id="t_tr1_0"><b class="block_txt">路过的猫</b></span>
+                        </td>
+                    </tr>
+                    <tr class="row2 topicrow">
+                        <td class="c1"><a id="t_rc1_1" class="replies" href="/read.php?tid=2000002">3</a></td>
+                        <td class="c2">
+                            <span class="t_k_c0">[讨论]</span>
+                            <a id="t_tt1_1" class="topic" href="/read.php?tid=2000002">黑市这个 +-15% 是每日重置的吗</a>
+                        </td>
+                        <td class="c3">
+                            <a id="t_ta1" class="author" href="/nuke.php?func=ucp&uid=33123456"><b class="block_txt">猫猫头实验体</b></a>
+                            <span id="t_pt1_1" class="silver postdate">2026-09-13 22:10</span>
+                        </td>
+                        <td class="c4">
+                            <a id="t_rt1_1" class="silver replydate" title="26-09-14 12:20" href="/read.php?tid=2000002">12:20</a>
+                            <span class="replyer" id="t_tr1_1"><b class="block_txt">数据党</b></span>
+                        </td>
+                    </tr>
+                    <tr class="row1 topicrow">
+                        <td class="c1"><a id="t_rc1_2" class="replies" href="/read.php?tid=2000003">48</a></td>
+                        <td class="c2">
+                            <a id="t_tt1_2" class="topic" href="/read.php?tid=2000003">卡包价格标高了会追回吗？客服回复整理</a>
+                            <span class="titleadd2"><a href="/thread.php?stid=47554235" class="silver">[合集]</a></span>
+                        </td>
+                        <td class="c3">
+                            <a id="t_ta2" class="author" href="/nuke.php?func=ucp&uid=31009988"><b class="block_txt">深渊打工仔</b></a>
+                            <span id="t_pt1_2" class="silver postdate">2026-09-12 09:31</span>
+                        </td>
+                        <td class="c4">
+                            <a id="t_rt1_2" class="silver replydate" title="26-09-14 09:10" href="/read.php?tid=2000003">09-14 09:10</a>
+                            <span class="replyer" id="t_tr1_2"><b class="block_txt">版务组</b></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div name="pageball" class="pagination">
+                <a href="/thread.php?stid=47554235&page=1">1</a>
+                <a href="/thread.php?stid=47554235&page=2">2</a>
+                <a href="/thread.php?stid=47554235&page=2">下一页</a>
+            </div>
+        </div>
+
+        <script>
+            // 伪造 NGA 的站点数据：合集页的 topicArg[7] 是**母版块**的 fid（真机实测如此），[8] 是 tid
+            (function () {
+                if (/nopostarg=1/.test(location.search)) return;
+                var data = {};
+                Array.prototype.forEach.call(document.querySelectorAll('#topicrows > tbody > tr'), function (row, index) {
+                    var title = row.querySelector('td.c2 a.topic');
+                    if (!title) return;
+                    var author = row.querySelector('td.c3 a.author');
+                    var item = [];
+                    item[1] = title;
+                    item[2] = author;
+                    item[7] = -7;
+                    item[8] = Number((title.getAttribute('href').match(/tid=(\d+)/) || [])[1] || 0);
+                    data[index] = item;
+                });
+                window.commonui = window.commonui || {};
+                window.commonui.topicArg = { data: data };
+                window.__PAGE = ['/thread.php?stid=47554235', 2, 1, 0];
+            })();
+        </script>
+        <script type="module" src="/dev/harness-boot.js"></script>
+    </body>
+</html>

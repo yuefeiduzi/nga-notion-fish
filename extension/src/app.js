@@ -5,7 +5,15 @@
  * 这一层不做任何 DOM 解析（在 nga/parse.js）也不做任何排版（在 view/）。
  */
 
-import { parsePage, routeKind, detectBlocked, isPostContentReady, findContentEl, PAGE } from './nga/parse.js';
+import {
+    parsePage,
+    routeKind,
+    detectBlocked,
+    isPostContentReady,
+    findContentEl,
+    adBounceUrl,
+    PAGE,
+} from './nga/parse.js';
 import { renderHome } from './view/home.js';
 import { renderBoard } from './view/board.js';
 import { renderThread } from './view/thread.js';
@@ -25,6 +33,7 @@ import {
 import { origin } from './core/dom.js';
 
 const SKIP_KEY = 'ngr-skip';
+const AD_BOUNCE_KEY = 'ngr-ad-bounce';
 const DARK_FAVICON =
     'data:image/svg+xml,' +
     encodeURIComponent(
@@ -55,7 +64,15 @@ export async function start(settings) {
     }
 
     const kind = routeKind(location.href);
-    if (kind === PAGE.UNKNOWN) return; // 不支持的页面：保持原站
+    if (kind === PAGE.UNKNOWN) {
+        // 例外：原站 JS 会按 cookie 计数把整页换成插播广告页，那只是个中转页，直接弹回原地址
+        const bounce = adBounceUrl(location.href);
+        if (bounce && Date.now() - Number(sessionStorage.getItem(AD_BOUNCE_KEY) || 0) > 10000) {
+            sessionStorage.setItem(AD_BOUNCE_KEY, String(Date.now()));
+            location.replace(bounce);
+        }
+        return; // 不支持的页面：保持原站
+    }
 
     await whenDomReady();
 
@@ -70,6 +87,9 @@ export async function start(settings) {
     state.shell = createShell(buildContext());
     state.lightbox = createLightbox();
     state.shell.root.appendChild(state.lightbox.node);
+
+    // 原站 JS 不会因为我们接管就停下 —— 把它会在背后动手的手势入口关掉（幂等）
+    muteHiddenGestures();
 
     // 先把壳和骨架屏画出来：NGA 的正文要等它自己的 JS 注入，
     // 与其让用户盯着白屏，不如先让他们看到我们的界面（这里也是摘掉 ngr-pending 的时机）
@@ -106,7 +126,7 @@ function selfHeal(kind, attempt = 0) {
     if (attempt > 8) return;
 
     setTimeout(() => {
-        const model = parsePage(document, location.href);
+        const model = parsePage(document, location.href, { title: state.originalTitle });
         const stillDirty =
             model.kind !== PAGE.THREAD ||
             model.posts.some(
@@ -209,13 +229,61 @@ function waitForTarget(kind, timeout = 8000) {
 }
 
 /**
+ * 接管期间的「手势闸门」：不让被藏起来的原站再收滚轮 / 触摸手势。
+ *
+ * 原因：原站 JS 不会因为我们接管就停下，它有一个「上拉翻页」手势 ——
+ * 滚轮滚到「屏幕下端」再往下，就把下一页 AJAX 拉回来，并 `history.pushState`
+ * 把地址栏改成 `&page=2`／`&page=3`。出处：`js_default.js` 的手势 `f()`（`mousewheel`／`touchmove`）
+ * → `commonui.pageBtn.continueNext()` → `js_box.js` 的 document 级 click → `P.go()` → pushState。
+ * 我们自己的滚动条不在 window 上，它判断「到底」永远成立
+ * ⇒ 在版面里滚几下就中招，表现就是「待久了点刷新，跳到了第 2、3 页」（2026-09 真机复现过）。
+ *
+ * 为什么只在事件层拦：内容脚本跑在**隔离世界**里，`window.commonui` 是 undefined
+ * （实测：`Runtime.evaluate` 到扩展的 executionContext，commonui = undefined），
+ * 所以既改不了它的 `pageBtn.continueNext`，也抽不掉它那个隐藏的「下一页」链接。
+ * 事件是两边共享的，所以捕获阶段挂 window 上一拦一个准 ——
+ * 不论原站什么时候注册的监听都轮不到它（capture 阶段永远在冒泡之前）。
+ * 只 `stopPropagation()`、不 `preventDefault()`，所以我们自己的滚动不受影响。
+ *
+ * 另外还有插播广告页（按 cookie 计数 `location.replace('/misc/adpage_insert_2.html?…')`），
+ * 那个改不掉，由 `adBounceUrl()` 在落地后弹回原地址。
+ */
+function muteHiddenGestures() {
+    if (muteHiddenGestures.installed) return;
+    muteHiddenGestures.installed = true;
+    ['mousewheel', 'touchmove'].forEach((type) => {
+        window.addEventListener(type, (event) => event.stopPropagation(), {
+            capture: true,
+            passive: true,
+        });
+    });
+}
+
+/**
+ * 地址栏跟我们真正渲染的这一页对齐。
+ * 原站可能已经偷改过 URL（见 `muteHiddenGestures`），不对齐的话「刷新」会跳到另一页去。
+ * 只收拾同一路径上的偏差，避免抹掉入口参数。
+ */
+function syncAddressBar(model) {
+    if (!model || !model.url) return;
+    try {
+        const current = new URL(location.href);
+        const target = new URL(model.url, location.href);
+        if (target.href === current.href || target.pathname !== current.pathname) return;
+        history.replaceState(history.state, document.title, target.href);
+    } catch {
+        /* 忽略：地址栏对齐失败不影响阅读 */
+    }
+}
+
+/**
  * 解析当前文档。等过就绪信号之后偶尔还会差一点，所以再短重试几次才认输。
  */
 async function parseLive(url, attempts = 4, delay = 500) {
-    let model = parsePage(document, url);
+    let model = parsePage(document, url, { title: state.originalTitle });
     for (let index = 1; index < attempts && model.kind === PAGE.UNKNOWN; index += 1) {
         await sleep(delay);
-        model = parsePage(document, url);
+        model = parsePage(document, url, { title: state.originalTitle });
     }
     return model;
 }
@@ -240,6 +308,7 @@ function render(model, options = {}) {
     shell.main.scrollTop = options.keepScroll ? savedScrollTop : 0;
     shell.main.focus({ preventScroll: true });
 
+    syncAddressBar(model);
     applyTitle(model);
     recordVisit(model);
 }

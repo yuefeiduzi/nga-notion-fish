@@ -96,8 +96,36 @@ table#topicrows.forumbox > tbody > tr.row1|row2.topicrow     ← 每行一个主
 - 标签有两种形态：**内嵌**在标题里的 `span.t_k_c{n}`，以及**纯文本前缀** `[本赛区赛事]标题…`。
   两种都要摘出来当标签，否则标题会带着方括号。
 - `row1`/`row2` 是奇偶行的底色类，不要用 `/top/` 去匹配置顶（`topicrow` 里就含 "top"）。
+- **合集（子版块）映射行** ✅：看着像帖子，点进去是它自己的主题列表。
+
+```html
+<tr class="row1 topicrow set_topic">
+  <td class="c1"><a class="replies" href="/read.php?tid=47554235">…图标（没有数字）…</a></td>
+  <td class="c2">
+    <a class="topic blue" href="/thread.php?stid=47554235">《黑暗帝国的统治》前瞻</a>
+    <span>
+      <span class="block_txt white nobr vertmod" title="无法编辑/回复">锁定</span>
+      <a class="block_txt white nobr vertmod" title="是一个合集主题 用户可以在合集中发布子主题">合集</a>
+    </span>
+  </td>
+  …（c3/c4 同普通行）
+</tr>
+```
+
+  - 判据用 **href 里的 `stid=`**（`tr` 上的 `set_topic` 类、「合集」标记都可以作为印证，但别只靠它们）。
+  - 这一行的 `topicArg.data[i][8]` 给的就是 **stid**（`[7]` 是母版块的 fid），
+    出处：第三方脚本 `reference/nga-filter__389620.user.js` 里 `stid === parseInt(item.tid, 10)`。
+  - 它的 c1 是图标不是数字，c4 是「最后回复」不是「回复/查看」⇒ 不要拿 c4 去凑回复数。
+- **合集页 `thread.php?stid=…`** ✅（2026-09 真机）：面包屑两级都在，
+  `炉石传说`（`/thread.php?fid=422`）→ `《黑暗帝国的统治》前瞻`（`/thread.php?stid=47554235`），
+  都是 `.nav_link`；`__CURRENT_STID=47554235`、`__CURRENT_FID=422`；`__PAGE={0:'/thread.php?stid=…',1:2,2:1,3:35}`。
+  ⚠️ 面包屑去重不能只留 pathname：`thread.php?fid=…` 与 `thread.php?stid=…` 会被当成同一条，
+  末级（合集名）就丢了，页面标题还会退成伪装用的「阅读器」（`parse.js` 的 `navKey()` 只保留 `fid/stid/tid`）。
 
 ## 3. 站点数据（最可靠，但只有当前页面有）✅
+
+> ⚠️ 2026-09-17 补充：内容脚本跑在**隔离世界**，扩展里 `window.commonui` 是 `undefined`，
+> 所以这一节的数据**只有 `dev/` 样例页（页面自己跑 harness，主世界）拿得到**（见 §7.2）。
 
 NGA 自己的 JS 会把数据挂在 window 上：
 
@@ -113,7 +141,6 @@ NGA 自己的 JS 会把数据挂在 window 上：
 或退一步「首楼正文元素真的有内容」；列表页等 `.topicrow`；首页等 `.catenew`。最多 8 秒。
 
 ## 4. 首页 / ✅
-
 - 结构是「**标题块 + 内容块**」分离的：
   - `<div class="catenew"><h2 class="catetitle">:: 网事杂谈 ::</h2></div>`（只有标题，0 个链接）
   - `<div class="catenew">…21 个 fid 链接…</div>`
@@ -151,7 +178,38 @@ NGA 自己的 JS 会把数据挂在 window 上：
 
 ## 7. 没解决的 / 待观察
 
-- 图片懒加载：能不能在解析前「唤醒」原站的懒加载（例如临时给原站容器布局并滚动）—— 未验证。
+### 7.1 原站在我们接管后还会动手 ✅（2026-09 真机复现）
+
+- **上拉翻页**（`commonui.pageBtn.continueNext`）：
+  - 出处：`js_default.js` 顶部的 IIFE（`if(location.pathname!='/read.php' && !='/thread.php')return`）里注册的
+    `mousewheel` / `touchmove` 手势；累加到 `j>=(x.ch>>3)` 就调 `f()` → `c.pageBtn.continueNext()`。
+  - 后果：`__NUKE.fireEvent(continueNextO,'click')` → `js_box.js` 的 document 级 click（`_useloadread`）
+    → `P.go(1|8)` → `history.replaceState` + `history.pushState(go.url)`，**地址栏变成 `&page=2`**，
+    同时把下一页的 `#topicrows` AJAX 追加进来、并重算 `__PAGE`。
+  - 为什么我们必中：本扩展的滚动条是 `.ngr-main`，window 不滚动 ⇒ 它那句
+    `x.ph - x.yf - x.ch < 10`（已在「屏幕下端」）永远成立。
+  - 实测：真机上滚十几下滚轮，地址栏就从 `thread.php?fid=422` 变成 `…&page=2`；
+    接着点阅读器里的「刷新」就「跳到了第 2、3 页」。
+  - 对策：`app.js` 的 `muteHiddenGestures()` 在**捕获阶段**的 window 上 `stopPropagation()`
+    （`mousewheel`/`touchmove`；只停传播、不 `preventDefault`，所以自己的滚动不受影响），
+    实测「`mousewheel` 到不了原站监听 + 地址栏不变 + 我们照样能滚」。
+    注意：内容脚本在隔离世界，**改不了** `commonui.pageBtn.continueNext`（见 §7.2），只能在事件层拦。
+- **插播广告页**（`commonui.insAdsChk`）：按 cookie 计数
+  `location.replace('/misc/adpage_insert_2.html?' + location.href)`，整页换成中转页
+  （`:300` 秒后刷新到首页）。它自己的 `getJump()` 也是 `location.replace(search)` 跳回原地址，
+  所以 `app.js` 用 `adBounceUrl()` 落地就弹回，别让它停留。
+
+### 7.2 隔离世界：站点数据在扩展里拿不到 ✅（2026-09-17 实测）
+
+- 用 CDP `Runtime.enable` 列出执行上下文，再 `Runtime.evaluate({contextId})` 分别读两个世界：
+  - `NGA 阅读器`（`chrome-extension://…`，isolated）：`typeof window.commonui === 'undefined'` ✓
+  - 主世界（`https://ngabbs.com`）：`typeof window.commonui === 'object'` ✓
+- ⇒ `parse.js` 里「首选站点数据」这条路**只在 `dev/` 样例页（页面自己跑 harness，主世界）生效**，
+  扩展运行时永远拿不到（一直在走选择器兜底）。修法见 `TODO.md` 的「内容与解析」第一条。
+
+### 7.3 其它
+
+- 图片懒加载：能不能在解析前「唤醒」原站的懒加载（例如临时给原站容器布局并滚动）—— 已有 `nga/lazy-images.js`。
 - SPA 化：现在每次跳转都是整页导航。若要做无刷新，只能走隐藏 iframe（让原站 JS 完整跑一遍再读它的 DOM），
   代价与风险都不小。
-- 楼层号：目前按 20 楼/页推算 + `postArg.data[i].i` 兜底，尚未在「第 N 页」上核对过。
+- 楼层号：目前按 20 楼/页推算。

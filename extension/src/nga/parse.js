@@ -289,6 +289,26 @@ function isInternal(url) {
     return NGA_HOSTS.test(hostOf(url));
 }
 
+/**
+ * 插播广告中转页（`/misc/adpage_insert_2.html?<原地址>`）。
+ * 出处：`js_default.js` 的 `commonui.insAdsChk`——按 cookie 计数，
+ * 到点了就 `location.replace('/misc/adpage_insert_2.html?' + location.href)`。
+ * 它只是个中转页（自己的 getJump() 也是跳回原地址），所以我们要立刻弹回去。
+ *
+ * @returns {string} 该弹回的 NGA 地址；不是这个页面就返回空串
+ */
+export function adBounceUrl(url) {
+    let parsed;
+    try {
+        parsed = new URL(url);
+    } catch {
+        return '';
+    }
+    if (!/\/misc\/adpage_insert_2\.html$/i.test(parsed.pathname)) return '';
+    const target = parsed.search.replace(/^\?\d*/, '');
+    return isInternal(target) ? target : '';
+}
+
 /* --------------------------------------------------------------------------
    错误页 / 权限页识别
    -------------------------------------------------------------------------- */
@@ -321,6 +341,27 @@ export function detectBlocked(doc) {
    面包屑 / 分页
    -------------------------------------------------------------------------- */
 
+/**
+ * 面包屑去重用的键：只保留「进哪个版面 / 哪个帖子」这几个参数。
+ * 早先直接用 `url.replace(/[?#].*$/, '')` 去重，结果 `thread.php?fid=422` 与
+ * `thread.php?stid=47554235` 被当成同一条，合集页的末级面包屑（合集名）会被删掉，
+ * 侧边栏里就只剩母版块、页面标题也错成「阅读器」。
+ */
+function navKey(url) {
+    try {
+        const parsed = new URL(url);
+        const params = new URLSearchParams();
+        ['fid', 'stid', 'tid'].forEach((name) => {
+            const value = parsed.searchParams.get(name);
+            if (value) params.set(name, value);
+        });
+        const query = params.toString();
+        return parsed.origin + parsed.pathname + (query ? `?${query}` : '');
+    } catch {
+        return url;
+    }
+}
+
 function parseNav(doc, baseUrl) {
     const links = all(doc, SEL.navLinks)
         // .nav_root 是「NGA」这一级，跳过
@@ -333,7 +374,7 @@ function parseNav(doc, baseUrl) {
 
     const seen = new Set();
     return links.filter((item) => {
-        const key = item.url.replace(/[?#].*$/, '');
+        const key = navKey(item.url);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -481,6 +522,10 @@ function buildThread({ row, titleEl, tid, authorEl, url }) {
     const { title, inlineTag } = pickTitle(titleEl);
     const href = absolute(titleEl.getAttribute('href'), url);
     const tidFromHref = (href.match(/tid=(\d+)/) || [])[1] || '';
+    // 合集（子版块）映射：标题链接是 `thread.php?stid=…`，看着像帖子其实是子列表。
+    // 实测（ngabbs.com 列表页）：这一行的 tr 类名里多一个 `set_topic`，
+    // td.c2 里还有「锁定」+「合集」两个标记，但只有 href 是唯一可靠的判据。
+    const stid = (href.match(/stid=(\d+)/) || [])[1] || '';
     const tagEl = first(row, SEL.boardTag);
     const tag = cleanTag(cleanText(tagEl && tagEl.textContent) || inlineTag);
     const authorNode = authorEl || first(row, SEL.boardAuthor);
@@ -489,10 +534,12 @@ function buildThread({ row, titleEl, tid, authorEl, url }) {
     const lastReplyUserEl = first(row, SEL.boardLastReplyUser);
     const repliesNode = first(row, SEL.boardReplies);
 
-    // 实测：回复数在 td.c1 a.replies；只有老结构才把「回复/查看」放在 td.c4
+    // 实测：回复数在 td.c1 a.replies；只有老结构才把「回复/查看」放在 td.c4。
+    // 合集（子版块）行的 c1 是个图标、没有数字，c4 也是「最后回复」而不是统计 ——
+    // 这种行别再按数字去猜，否则会编出「9 回复 · 14 阅」这种假数据。
     let replies = statNumber(repliesNode);
     let views = null;
-    if (replies === null) {
+    if (replies === null && !stid) {
         const cells = Array.from(row.querySelectorAll('td'));
         const statText = cleanText(cells.length >= 4 ? cells[3].textContent : '');
         const statNumbers = statText.match(/\d+/g) || [];
@@ -507,6 +554,9 @@ function buildThread({ row, titleEl, tid, authorEl, url }) {
 
     return {
         tid: String(tid || tidFromHref),
+        // 合集行：tid 就是 stid（NGA 给合集也开了一个同名主题），但 url 指向合集自己的列表
+        stid,
+        isSubset: Boolean(stid),
         title,
         url: href || `read.php?tid=${tid}`,
         tag,
@@ -523,7 +573,7 @@ function buildThread({ row, titleEl, tid, authorEl, url }) {
     };
 }
 
-function parseBoard(doc, url) {
+function parseBoard(doc, url, pageTitle = '') {
     const threads = [];
     const seen = new Set();
     const topicArg = readTopicArg(doc);
@@ -563,18 +613,53 @@ function parseBoard(doc, url) {
     }
 
     const nav = parseNav(doc, url);
-    const fidParam = new URL(url).searchParams.get('fid');
-    const boardNav = nav[nav.length - 1] || null;
+    const params = new URL(url).searchParams;
+    const fidParam = params.get('fid');
+    const stidParam = params.get('stid');
     const fidFromArg = topicArg && topicArg.length ? Number(topicArg[0].fid) : null;
+
+    // 合集页（thread.php?stid=…）：面包屑末级是合集名（链接里带 stid），上一级才是母版块。
+    // 个别页面的面包屑只到母版块，这时末级链接是 fid，合集名只能从标题里取。
+    let boardNav = nav[nav.length - 1] || null;
+    let parentNav = null;
+    if (stidParam) {
+        const subsetNav = nav.find((item) => item.url.includes(`stid=${stidParam}`)) || null;
+        if (subsetNav) {
+            parentNav = nav[nav.indexOf(subsetNav) - 1] || null;
+            boardNav = subsetNav;
+        } else if (boardNav && /fid=/.test(boardNav.url)) {
+            parentNav = boardNav;
+            boardNav = null;
+        }
+    }
+    const parent = parentNav
+        ? {
+              fid: Number((parentNav.url.match(/fid=(-?\d+)/) || [])[1] || 0) || null,
+              name: parentNav.name,
+              url: parentNav.url,
+          }
+        : null;
 
     return {
         kind: PAGE.BOARD,
         url,
         nav,
         board: {
-            fid: fidParam ? Number(fidParam) : Number.isFinite(fidFromArg) ? fidFromArg : null,
-            name: boardNav ? boardNav.name : cleanText(doc.title).replace(/[-|].*$/, ''),
+            // 合集页没有自己的 fid（topicArg 里给的是母版块的 fid），别拿它去收藏
+            fid: stidParam
+                ? null
+                : fidParam
+                  ? Number(fidParam)
+                  : Number.isFinite(fidFromArg)
+                    ? fidFromArg
+                    : null,
+            stid: stidParam ? Number(stidParam) : null,
+            name: boardNav
+                ? boardNav.name
+                // 标题兜底要用「我们自己改名之前」的标题（摸鱼模式下现在的是「阅读器」）
+                : cleanText(pageTitle || doc.title).replace(/[-|].*$/, ''),
             url,
+            parent,
         },
         threads,
         page: parsePageInfo(doc, url),
@@ -708,7 +793,7 @@ function parsePosts(doc, url, page) {
     return posts;
 }
 
-function parseThread(doc, url) {
+function parseThread(doc, url, pageTitle = '') {
     const page = parsePageInfo(doc, url);
     const posts = parsePosts(doc, url, page);
     const nav = parseNav(doc, url);
@@ -719,7 +804,7 @@ function parseThread(doc, url) {
     const board = normalNav[normalNav.length - 1] || null;
 
     const firstSubject = posts[0] && posts[0].subject;
-    const titleFromDoc = cleanText(doc.title)
+    const titleFromDoc = cleanText(pageTitle || doc.title)
         .replace(/[-|]\s*(NGA|艾泽拉斯|玩家社区).*$/i, '')
         .trim();
 
@@ -751,13 +836,17 @@ function parseThread(doc, url) {
    -------------------------------------------------------------------------- */
 
 /**
- * @param {Document} doc   当前页面或 fetch 得到的文档
- * @param {string}   url   该文档对应的真实 URL（DOMParser 文档没有 baseURI）
+ * @param {Document} doc         当前页面或 fetch 得到的文档
+ * @param {string}   url          该文档对应的真实 URL（DOMParser 文档没有 baseURI）
+ * @param {object}   [options]    { title }：进入阅读模式前的原始标签页标题。
+ *                                 摸鱼模式会把 document.title 改成中性名，解析时不能拿它当板块名。
  * @returns {object} 见文件末尾模型说明
  */
-export function parsePage(doc, url) {
+export function parsePage(doc, url, options = {}) {
     const blocked = detectBlocked(doc);
     if (blocked) return Object.assign({ url }, blocked);
+
+    const pageTitle = options.title || '';
 
     switch (routeKind(url)) {
         case PAGE.HOME: {
@@ -767,13 +856,13 @@ export function parsePage(doc, url) {
                 : { kind: PAGE.UNKNOWN, url, message: '没有在本页找到板块列表。' };
         }
         case PAGE.BOARD: {
-            const model = parseBoard(doc, url);
+            const model = parseBoard(doc, url, pageTitle);
             return model.threads.length
                 ? model
                 : { kind: PAGE.UNKNOWN, url, message: '没有在本页找到帖子列表。' };
         }
         case PAGE.THREAD: {
-            const model = parseThread(doc, url);
+            const model = parseThread(doc, url, pageTitle);
             return model.posts.length
                 ? model
                 : { kind: PAGE.UNKNOWN, url, message: '没有在本页找到帖子内容。' };
@@ -789,8 +878,8 @@ export { withPage, parsePageInfo };
    模型说明
    --------------------------------------------------------------------------
    home   : { kind, url, groups: [{ name, forums: [{ fid, name, url }] }] }
-   board  : { kind, url, nav, board: { fid, name, url },
-              threads: [{ tid, title, url, tag, author, authorUrl, time,
+   board  : { kind, url, nav, board: { fid, stid, name, url, parent: { fid, name, url } | null },
+              threads: [{ tid, stid, isSubset, title, url, tag, author, authorUrl, time,
                           replies, views, lastReply, excerpt, isPinned }],
               page: { current, max } }
    thread : { kind, url, nav, tid, title, board: { fid, name, url },

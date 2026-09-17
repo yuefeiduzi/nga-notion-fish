@@ -10,6 +10,18 @@ import { copyDiagnostics } from '../core/diagnose.js';
 /** 侧边栏左上角的品牌名。注意：设置里的 `brandText` 是另一件事——那是应急伪装用的标签页标题 */
 const BRAND = 'NGA 阅读器';
 
+/** 板块链接：去掉 page —— 侧边栏里的板块名应该回到第一页，而不是停在当前页 */
+function boardHref(board) {
+    if (!board || !board.url) return '';
+    try {
+        const url = new URL(board.url, location.href);
+        url.searchParams.delete('page');
+        return url.href;
+    } catch {
+        return board.url;
+    }
+}
+
 export function createShell(ctx) {
     const root = el('div', { id: 'ngr-root' });
     const side = el('aside', { class: 'ngr-side' });
@@ -69,15 +81,6 @@ export function createShell(ctx) {
         side.appendChild(el('div', { class: 'ngr-side-group', text: '内容' }));
         const navBox = el('nav', { class: 'ngr-side-nav' });
         navBox.appendChild(sideLink({ iconName: 'home', label: '板块首页', href: '/', active: model.kind === 'home' }));
-        navBox.appendChild(
-            sideLink({
-                iconName: 'clock',
-                label: '最近浏览',
-                href: '',
-                count: settingsNow.recents.length ? String(settingsNow.recents.length) : '',
-                active: model.kind === 'recents',
-            })
-        );
         side.appendChild(navBox);
 
         // ---- 板块 ----
@@ -86,22 +89,33 @@ export function createShell(ctx) {
 
         const favorites = settingsNow.favorites.slice().reverse();
         const currentBoard = model.board && model.board.name ? model.board : null;
+        const parentBoard = model.board && model.board.parent && model.board.parent.name ? model.board.parent : null;
         const isCurrentFavorite =
             currentBoard && favorites.some((item) => String(item.fid) === String(currentBoard.fid));
+
+        // 合集（子版块）页：母版块也列出来，否则用户从这里回不到上一个版面
+        if (parentBoard && !favorites.some((item) => String(item.fid) === String(parentBoard.fid))) {
+            boardBox.appendChild(
+                sideLink({ iconName: 'list', label: parentBoard.name, href: boardHref(parentBoard) })
+            );
+        }
 
         if (currentBoard && !isCurrentFavorite) {
             boardBox.appendChild(
                 sideLink({
                     iconName: 'list',
                     label: currentBoard.name,
-                    href: currentBoard.url || '',
+                    href: boardHref(currentBoard),
                     active: true,
-                    star: { on: false, onclick: () => ctx.toggleFavorite(currentBoard) },
+                    // 合集页没有自己的 fid，收藏按钮留着也没用（点下去什么都不会发生）
+                    star: currentBoard.fid
+                        ? { on: false, onclick: () => ctx.toggleFavorite(currentBoard) }
+                        : null,
                 })
             );
         }
 
-        if (!favorites.length && !currentBoard) {
+        if (!favorites.length && !currentBoard && !parentBoard) {
             boardBox.appendChild(el('div', { class: 'ngr-side-empty', text: '还没有收藏板块，在板块页点 ☆ 收藏' }));
         }
 

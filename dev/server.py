@@ -25,10 +25,12 @@ MAPPING = {
     "/read.php": "dev/fixtures/thread.html",
 }
 
-# 带查询参数的覆盖映射：(路径, 查询里必须出现的键) -> 样例页面
+# 带查询参数的覆盖映射：(路径, 查询里必须出现的参数名) -> 样例页面
 QUERY_MAPPING = [
     ("/read.php", "blocked", "dev/fixtures/blocked.html"),
     ("/thread.php", "blocked", "dev/fixtures/blocked.html"),
+    # 合集（子版块）页：thread.php?stid=…
+    ("/thread.php", "stid", "dev/fixtures/board-subset.html"),
 ]
 
 # 资源前缀 → 真实目录（扩展的代码在 extension/ 下，样例页面按扩展内的路径引用）
@@ -45,20 +47,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
-        if path in MAPPING and not any(
-            path == target and key in parsed.query for target, key, _ in QUERY_MAPPING
-        ):
+        query = urllib.parse.parse_qs(parsed.query)
+        override = next(
+            (fixture for target, key, fixture in QUERY_MAPPING if path == target and key in query),
+            None,
+        )
+        if override:
+            self.path = "/" + override
+        elif path in MAPPING:
             self.path = "/" + MAPPING[path]
         else:
-            for target, key, fixture in QUERY_MAPPING:
-                if path == target and key in parsed.query:
-                    self.path = "/" + fixture
+            for prefix, dest in PREFIXES:
+                if path.startswith(prefix):
+                    self.path = "/" + dest + path[len(prefix) :]
                     break
-            else:
-                for prefix, dest in PREFIXES:
-                    if path.startswith(prefix):
-                        self.path = "/" + dest + path[len(prefix) :]
-                        break
         super().do_GET()
 
     def end_headers(self):
@@ -74,4 +76,5 @@ if __name__ == "__main__":
     with socketserver.ThreadingTCPServer(("127.0.0.1", PORT), Handler) as httpd:
         print(f"dev server → http://127.0.0.1:{PORT}/  (fixtures: {', '.join(MAPPING)})")
         print(f"错误页样例 → http://127.0.0.1:{PORT}/read.php?tid=1&blocked=1")
+        print(f"合集页样例 → http://127.0.0.1:{PORT}/thread.php?stid=47554235")
         httpd.serve_forever()

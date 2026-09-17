@@ -74,8 +74,18 @@ extension/
 
 - **先藏后画**：`boot.js` 在 `document_start` 给 `<html>` 加 `ngr-pending`（CSS 里 `visibility: hidden`），任何失败路径都必须把它摘掉，否则用户看到白屏（已有 4s 兜底）。
 - **原站只当数据源**：接管后 `html.ngr-active` 会隐藏 body 下除 `#ngr-root` 以外的所有节点，并 `window.stop()` 中止剩余资源加载。
+- **被藏起来的原站 JS 还活着**：它会在背后动手，必须按住 ——
+  ①「上拉翻页」：滚到屏幕下端再往下滚，它会 AJAX 拉下一页并 `history.pushState` 把地址栏改成 `&page=2`
+  （我们的滚动条是 `.ngr-main`、window 不滚，它判断「到底」永远成立）⇒ `app.js` 的 `muteHiddenGestures()`
+  在捕获阶段 `stopPropagation()`（2026-09 真机复现并验证修复）；
+  ②插播广告页 `/misc/adpage_insert_2.html?<原地址>`：整页被 `location.replace` 换掉，由 `adBounceUrl()` 弹回。
+- **内容脚本在隔离世界**：`window.commonui` / `window.__PAGE` 在扩展里是 `undefined`
+  （CDP 分世界验证过）。所以 `parse.js` 里「首选站点数据」只在 `dev/` 样例页生效，
+  扩展里实际走的是选择器兜底；也别指望改原站函数（只能从事件层拦）。修法在 `TODO.md` 的「内容与解析」。
 - **解析层只产出模型**（见 `parse.js` 末尾注释），绝不拼 HTML；排版全在 `view/` + `app.css`。
 - **选择器一律写在 `parse.js` 的 `SEL` 表里**，用 `first()/all()` 多路兜底，不要散落在各处。
+- **面包屑（`parseNav`）去重不能只看 pathname**：`thread.php?fid=422` 与 `thread.php?stid=…` 是两条，
+  它们的区别全在 query 里（`navKey()` 只保留 `fid/stid/tid`）。
 - **`sanitize.js` 的处理顺序不能改**：`convertQuotes/convertCollapse` 必须在 `scrubAttributes` 之前，否则 `.quote` / `.collapse` 类名会被洗掉。
 - **幂等**：同一页会因「设置变更 / 自愈重渲染」被重复渲染，且跳转后 content script 会重新跑一遍；
   事件挂在文档级或渲染时重建的节点上，不要往 `window` 上反复绑定。
@@ -95,6 +105,8 @@ extension/
 
 - 首页 `/`：`.catenew` + `.catetitle`（**标题块与内容块是分离的**，要按文档顺序扫）+ `a[href*="fid="]`
 - 列表页 `/thread.php`：`table#topicrows > tbody > tr.row1|row2.topicrow`；
+  **合集（子版块）映射行的标题链到 `thread.php?stid=…`**（`tr.set_topic` + 「合集」标记），
+  进这种页面后母版块在面包屑的上一级（侧边栏要把母版块列出来）
   回复数在 `td.c1 a.replies`、标题 `td.c2 a.topic`、标签 `span.titleadd2 a` 或标题内嵌 `span.t_k_c{n}`、
   作者 `td.c3 a.author`、时间 `td.c3 span.silver.postdate`、最后回复 `td.c4 a.replydate` + `.replyer`
 - 帖子页 `/read.php`：`#m_posts_c > table.forumbox.postbox`（**整页共用一张表**），楼层是 `tr.postrow`；

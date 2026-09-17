@@ -16,7 +16,9 @@
                       span.titleadd2 > a                        ← 右侧标签
               td.c3 > a#t_ta1_{n}.author + span#t_pt1_{n}.silver.postdate
               td.c4 > a#t_rt1_{n}.silver.replydate[title=绝对时间] + span#t_tr1_{n}.replyer
+            tr.topicrow.set_topic                               ← 合集（子版块）映射行，标题链到 thread.php?stid=…
           加 ?nopostarg=1 可跳过冻结的站数据，验证选择器兜底路径。
+          加 ?stid=… 会走 dev/fixtures/board-subset.html（合集页）。
         -->
         <div id="mmc">
             <div class="nav">
@@ -57,6 +59,29 @@
                         <td class="c4">
                             <a id="t_rt1_1" class="silver replydate" title="26-09-14 15:12" href="/read.php?tid=1234567">5 分钟前</a>
                             <span class="replyer" id="t_tr1_1"><b class="block_txt">1vvays</b></span>
+                        </td>
+                    </tr>
+                    <tr class="row2 topicrow set_topic">
+                        <!-- 合集（子版块）映射：2026-09 真机抓到的一行就是这个样子 ——
+                             tr 多一个 set_topic 类，标题链到 thread.php?stid=…，
+                             td.c2 里带「锁定」+「合集」两个标记，a.replies 指向同名主题 read.php?tid=stid -->
+                        <td class="c1">
+                            <a id="t_rc1_6" class="replies" href="/read.php?tid=47554235" title="打开新窗口"><img src="data:," alt="0" /></a>
+                        </td>
+                        <td class="c2">
+                            <a id="t_tt1_6" class="topic blue" href="/thread.php?stid=47554235">《黑暗帝国的统治》前瞻</a>
+                            <span>
+                                <span class="block_txt white nobr vertmod" title="无法编辑/回复">锁定</span>
+                                <a href="/read.php?tid=47554235" class="block_txt white nobr vertmod" title="是一个合集主题 用户可以在合集中发布子主题">合集</a>
+                            </span>
+                        </td>
+                        <td class="c3">
+                            <a id="t_ta6" class="author" href="/nuke.php?func=ucp&uid=5490871"><b class="block_txt">忧郁俯卧撑</b></a>
+                            <span id="t_pt1_6" class="silver postdate">2026-09-14 11:36</span>
+                        </td>
+                        <td class="c4">
+                            <a id="t_rt1_6" class="silver replydate" title="26-09-14 11:36" href="/read.php?tid=47554235">09-14 11:36</a>
+                            <span class="replyer" id="t_tr1_6"><b class="block_txt">忧郁俯卧撑</b></span>
                         </td>
                     </tr>
                     <tr class="row1 topicrow">
@@ -143,7 +168,11 @@
                     item[1] = title;
                     item[2] = author;
                     item[7] = -7;
-                    item[8] = Number((title.getAttribute('href').match(/tid=(\d+)/) || [])[1] || 0);
+                    // 合集行没有 tid：真机上 topicArg 的 [8] 给的就是 stid
+                    var href = title.getAttribute('href');
+                    item[8] = Number(
+                        (href.match(/(?:tid|stid)=(\d+)/) || [])[1] || 0
+                    );
                     data[index] = item;
                 });
                 window.commonui = window.commonui || {};
