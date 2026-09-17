@@ -812,17 +812,24 @@
     font-style: italic;
 }
 
+/* 大图（表情见下面 .ngr-inline-img）。
+   这里必须 !important：原站 JS（ubbcode.adjImgSize）会按**它自己**的布局宽度给图片写
+   内联 max-width（实测 982~1030px，比正文栏宽 300px），非 !important 的规则压不住。 */
 .ngr-content img {
     display: block;
-    width: auto;
-    max-width: 100%;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     /* 图片框限高：一张竖图不该占满整屏，点开才是看大图的地方 */
-    max-height: 70vh;
-    height: auto;
+    max-height: 70vh !important;
+    min-height: 0 !important;
+    height: auto !important;
     margin: 14px 0;
     border: 1px solid var(--ng-border);
     border-radius: 10px;
     background: var(--ng-surface-0);
+    /* 原站给「点开看大图」画的内联描边，我们用全屏预览替代 */
+    outline: none !important;
     cursor: zoom-in;
     transition: border-color var(--ng-dur-fast) ease;
 }
@@ -831,10 +838,10 @@
     border-color: var(--ng-accent);
 }
 
-/* 表情/小图标不参与大图排版，也不进预览 */
+/* 表情/小图标不参与大图排版，也不进预览：按原图大小行内排 */
 .ngr-content img.ngr-inline-img {
     display: inline-block;
-    max-height: none;
+    max-height: none !important;
     margin: 0 2px;
     border: 0;
     border-radius: 0;
@@ -989,7 +996,9 @@
     height: 14px;
 }
 
-.ngr-hide-images .ngr-content img {
+/* 无图模式的兜底（正常情况下表情/图片已在 sanitize 阶段换成占位了）：
+   表情不在此列 —— 它们是文字的一部分，无图模式也要看得见 */
+.ngr-hide-images .ngr-content img:not(.ngr-inline-img) {
     display: none;
 }
 

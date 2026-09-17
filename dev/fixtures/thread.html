@@ -176,7 +176,11 @@
                                         <pre><code>for (int i = 0; i &lt; 2; i++) {
     castSkill("E");
 }</code></pre>
-                                        表情测试：<img src="/dev/fixtures/smile.gif" alt="笑" width="20" height="20" />
+                                        <!-- 实测：NGA 的 [s:ac:11] 渲染成 <img class="smile_ac" src="…/post/smile/ac11.png" alt="咦">
+                                             —— 表情没有 data-* 尺寸可依，只能看类名/地址；原图 69×60。
+                                             第二个没有 class，只能靠 /post/smile/ 地址认。 -->
+                                        表情测试：<img class="smile_ac" src="/dev/fixtures/smile_ac11.png" alt="咦" />
+                                        <img src="/dev/fixtures/post/smile/ac15.png" alt="笑" />
                                         <br />
                                         原始数据来源：<a href="https://example.com/axis-table" target="_blank">example.com 轴表</a>
                                         <br />
@@ -260,6 +264,28 @@
                 window.commonui.postArg = { data: data };
                 window.commonui.topicArg = { data: {} };
                 window.__PAGE = ['/read.php?tid=1234567', 9, 1, 0];
+            })();
+        </script>
+        <script>
+            // 复刻 NGA 的 ubbcode.adjImgSize：它会按**原站自己**的布局宽度给图写内联 max-width
+            //（真机实测 982~1030px，比正文栏宽 300px）。这里故意写更宽 + 加 min-width 和描边，
+            // 用来回归验证 app.css 里那几条 !important 是否压得住。
+            (function () {
+                if (/noadj=1/.test(location.search)) return;
+                var write = function () {
+                    document.querySelectorAll('.ngr-content img').forEach(function (img) {
+                        img.style.maxWidth = '990px';
+                        img.style.minWidth = '640px';
+                        img.style.outline = '5px solid rgb(230, 195, 168)';
+                        img.style.outlineOffset = '-5px';
+                    });
+                };
+                // 渲染是异步的（boot → 取数 → 画），周期性模仿几次而已
+                var tries = 0;
+                var timer = setInterval(function () {
+                    write();
+                    if (++tries > 20) clearInterval(timer);
+                }, 500);
             })();
         </script>
         <script type="module" src="/dev/harness-boot.js"></script>

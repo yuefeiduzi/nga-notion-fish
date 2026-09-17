@@ -63,8 +63,6 @@ const STRIP_SELECTORS = [
     '.contentFullWidthButton',
 ];
 
-const INLINE_IMAGE_RE = /(smilie|smiley|post_smiley|e\d{2}\.gif|\/emot)/i;
-
 /**
  * @param {Element} sourceEl  原站正文容器
  * @param {object}  options   { baseUrl, hideImages }
@@ -274,12 +272,56 @@ function convertVideos(root, baseUrl) {
    6. 图片
    -------------------------------------------------------------------------- */
 
+/** 表情：[s:a2:02] 渲染成 <img class="smile_a2" src="https://img4.nga.cn/ngabbs/post/smile/a2_02.png" alt="02">
+ *  （出处：NGA 静态资源 js_bbscode_core.js；实测原图 69×60，比正文大一圈，但没有 data-* 尺寸可依）
+ *  老页面/第三方还有 smilie、e01.gif 这类写法，一并认掉。 */
+const SMILE_CLASS_RE = /(^|\s)smile/i;
+const SMILE_SRC_RE = /\/post\/smile\//i;
+const INLINE_IMAGE_RE = /(smilie|smiley|post_smiley|e\d{2}\.gif|\/emot)/i;
+
+/** 原站留给自己的图片钩子（懒加载/尺寸/点击换图）。副本上留着，原站的 JS 会继续认领它、
+ *  往上面写 max-width:900+px 的内联样式（见 app.css 里的说明），所以一律摘掉。 */
+const IMAGE_HOOK_ATTRS = [
+    'data-src',
+    'data-original',
+    'data-lazy-src',
+    'data-srcorg',
+    'data-srclazy',
+    'data-srcnolazy',
+    'data-usethumb',
+    'data-argi',
+    'data-nw',
+    'data-nh',
+    'data-iw',
+    'data-ih',
+    'data-apporg',
+    'data-appinit',
+    'data-zom',
+    'file',
+    '_orgt',
+    '_us',
+];
+
+function isEmoteImage(node, rawSrc) {
+    return (
+        SMILE_CLASS_RE.test(node.getAttribute('class') || '') ||
+        SMILE_SRC_RE.test(rawSrc) ||
+        INLINE_IMAGE_RE.test(rawSrc)
+    );
+}
+
+function stripImageHooks(node) {
+    IMAGE_HOOK_ATTRS.forEach((attr) => node.removeAttribute(attr));
+}
+
 export function pickImageSrc(img) {
     const candidates = [
         img.getAttribute('data-src'),
         img.getAttribute('data-original'),
         img.getAttribute('data-lazy-src'),
         img.getAttribute('data-srcorg'),
+        img.getAttribute('data-srclazy'),
+        img.getAttribute('data-srcnolazy'),
         img.getAttribute('file'),
         img.getAttribute('src'),
     ];
@@ -292,21 +334,19 @@ export function pickImageSrc(img) {
 }
 
 function processImages(root, baseUrl, hideImages, options) {
-    root.querySelectorAll('img, [data-src][class*="img"]').forEach((node) => {
-        if (node.tagName !== 'IMG') return;
-
+    root.querySelectorAll('img').forEach((node) => {
         const rawSrc = pickImageSrc(node);
         const src = absolute(rawSrc, baseUrl);
         // 实测 NGA 大量用 179x1 这种 1px 图做占位/间隔，正文里不该出现
         const declaredW = Number(node.getAttribute('data-nw') || node.getAttribute('width')) || 0;
         const declaredH = Number(node.getAttribute('data-nh') || node.getAttribute('height')) || 0;
-        if (declaredW && declaredH && declaredW <= 4 && declaredH <= 4 && !INLINE_IMAGE_RE.test(rawSrc)) {
+        const emote = isEmoteImage(node, rawSrc);
+        if (declaredW && declaredH && declaredW <= 4 && declaredH <= 4 && !emote) {
             node.remove();
             return;
         }
-        const width = declaredW;
-        const height = declaredH;
-        const isSmall = (width && width <= 28) || (height && height <= 28) || INLINE_IMAGE_RE.test(rawSrc);
+        // 行内小图：表情，或者 28px 以下的图标/间隔图
+        const isInline = emote || (declaredW && declaredW <= 28) || (declaredH && declaredH <= 28);
         const alt = node.getAttribute('alt') || node.getAttribute('title') || '';
 
         if (!src) {
@@ -323,14 +363,14 @@ function processImages(root, baseUrl, hideImages, options) {
             return;
         }
 
-        // 表情：保持行内小图标，不受无图模式影响
-        if (isSmall) {
+        // 表情：始终保持行内小图标，不受无图模式影响（表情是文字的一部分，不是「图片内容」）
+        if (isInline) {
             node.setAttribute('src', src);
             node.setAttribute('alt', alt);
             node.classList.add('ngr-inline-img');
             node.removeAttribute('width');
             node.removeAttribute('height');
-            ['data-src', 'data-original', 'data-lazy-src', 'file'].forEach((attr) => node.removeAttribute(attr));
+            stripImageHooks(node);
             return;
         }
 
@@ -339,6 +379,7 @@ function processImages(root, baseUrl, hideImages, options) {
             node.setAttribute('loading', 'lazy');
             node.setAttribute('decoding', 'async');
             node.setAttribute('alt', alt);
+            stripImageHooks(node);
             return;
         }
 

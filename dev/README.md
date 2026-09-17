@@ -25,6 +25,7 @@ python3 dev/server.py 8765
 | 文件 | 说明 |
 | --- | --- |
 | `fixtures/thread.html` | 按真实 read.php 仿写：`#m_posts > #m_posts_c > table.forumbox.postbox > tr.row1`，`td.c1 .posterInfoLine .author`，`td.c2 #postsubject{N}` / `#postcontent{N}` / `#postdate{N}` / `.stat > .recommendvalue`；含引用、嵌套引用、表格、代码块、折叠块、表情、懒加载图片、签名、贴条 |
+| `fixtures/smile_ac11.png`、`fixtures/post/smile/ac15.png` | 表情样例（69×60，与真实 NGA 表情同尺寸）。一个靠 `class="smile_ac"` 认，一个只能靠 `/post/smile/` 地址认；页面底部还会模仿原站 JS 往图上写内联 `max-width:990px`/`min-width`/描边（真机就是这个把图撑到比正文栏宽的），用来回归验证 `app.css` 里的 `!important`；加 `?noadj=1` 可跳过这段模拟 |
 | `fixtures/board.html` | 按真实 thread.php 仿写：`#topicrows > table.forumbox > tr.row1/.row2 > td.c1~c4`，`a.topic`、`span[class^=t_k_]`、`a.author`、`span.silver.postdate` |
 | `fixtures/home.html` | `.catenew > .catetitle` + `a[href*=fid=]` |
 | `fixtures/blocked.html` | 模仿 NGA 拒绝访客的 `(ERROR:15)` 页面，用 `?blocked=1` 触发，用来验证兜底界面与「复制诊断」 |
