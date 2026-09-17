@@ -34,6 +34,9 @@
 3. 点「加载已解压的扩展程序」，选择本仓库的 **`extension/`** 目录
 4. 打开 `https://ngabbs.com/`（需要先登录 NGA），页面会自动进入阅读模式
 
+> 想先看看长什么样、又不想登录？扩展里附了一个离线演示页，装好后打开
+> `chrome-extension://<扩展 ID>/demo/index.html`（在 `chrome://extensions/` 里能看到 ID）。
+
 > 扩展在管理页里的名字是「NGA 阅读器」；但阅读时的标签页标题默认是中性的（`阅读器`），
 > 加上中性图标与应急伪装页，旁边有人时也不至于一眼被看出在看论坛。
 
@@ -70,7 +73,7 @@
 ```
 nga-notion-fish/
 ├── extension/                   # Chrome 扩展（MV3，无构建、无依赖）
-│   ├── manifest.json            # 名字 / 权限 / content_scripts / popup
+│   ├── manifest.json            # 名字 / 图标 / 权限 / content_scripts / popup
 │   ├── src/
 │   │   ├── boot.js              # 内容脚本入口：document_start 藏原站 → 动态 import 应用
 │   │   ├── app.js               # 控制器：取页 → 解析 → 渲染 → 路由 / 快捷键 / 伪装 / 预览
@@ -84,12 +87,17 @@ nga-notion-fish/
 │   │   │   └── lazy-images.js   # 唤醒 NGA 的图片懒加载（临时给原站布局 + 逐张滚进视口）
 │   │   ├── view/                # 纯渲染层（shell / home / board / thread / parts / lightbox）
 │   │   └── styles/              # boot.css + app.css（aihot 风格设计 token）
+│   ├── icons/                   # 扩展图标（store/make-icons.py 生成）
+│   ├── demo/                    # 离线演示页（给商店审核员 / 没登录的人看）
 │   └── popup/                   # 扩展弹窗设置面板
 ├── dev/                         # 本地调试：假 NGA 页面 + 静态服务器 + DOM 结构笔记 + 参考脚本库
 │   ├── README.md                # 调试方式与 fixtures 使用说明
 │   ├── nga-dom-notes.md         # NGA 真实结构笔记（逐条带出处）
 │   └── reference/               # 8 个第三方 NGA 用户脚本源码（仅供核对选择器）
-└── assets/                      # README 预览图
+├── store/                       # 上架素材：打包脚本、图标/宣传图生成、商品页文案（不参与扩展运行）
+├── assets/                      # README 预览图
+├── PRIVACY.md                   # 隐私政策（上架时填这个链接）
+└── LICENSE                      # MIT
 ```
 
 ## 开发与调试

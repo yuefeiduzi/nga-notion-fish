@@ -55,3 +55,23 @@ http://127.0.0.1:8765/read.php?tid=1234567&blocked=1   # 未登录/权限不足�
 
 如果只是想看 UI，用浏览器打开上面三个本地地址就够了；
 想要截图对比，`assets/preview-reading.png` 是帖子页样例的当前渲染结果。
+
+另外包里还有一个**离线演示页**（`extension/demo/`）：它是给商店审核员、以及没登录 NGA 的人看的，
+打开 `chrome-extension://<扩展 ID>/demo/index.html` 就能看到阅读界面（内容是同目录的示例数据，
+走的仍是真实的 `parse → sanitize → view` 路径）。改了这两层逻辑顺手看一眼那里。
+
+## 4. 生成商店截图
+
+上架用的图在 `store/images/`（详见 `store/README.md`），截图确实是真浏览器拍的：
+
+1. `python3 dev/server.py 8765`，把浏览器窗口调成 **1280×800**
+2. 先在设置里**清空「最近浏览」**（别把真人浏览记录截进去）、把收藏留一个板块（侧边栏好看一点）
+3. 分别截：阅读页（默认无图模式）、图片模式（滚到有图那段）、深色主题、板块列表页
+4. 存成 `store/images/screenshot-1~4-*.png`；图片模式那张用演示页截（示例图比 fixture 的线框图好看）
+
+品牌图（小宣传图 440×280、Edge logo 300×300）与扩展图标都是脚本生成的：
+
+```bash
+python3 store/make-icons.py             # → extension/icons/*.png
+python3 store/make-listing-images.py    # → store/images/{promo-440x280,logo-300x300}.png
+```

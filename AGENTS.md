@@ -31,9 +31,11 @@ python3 dev/server.py 8765     # 然后打开 http://127.0.0.1:8765/read.php?tid
 | `README.md` | 用户 | 装与用、特性、出问题怎么办、已知限制 |
 | `TODO.md` | 人 | **进度与下一步**（顶部是「现在这一步」与快速自检表）、待办、技术笔记 |
 | `AGENTS.md` | AI | 架构约定、分层职责、选择器入口、踩过的坑 |
-| `dev/README.md` | 人 | 样例页怎么跑、fixtures 的规矩 |
+| `dev/README.md` | 人 | 样例页怎么跑、fixtures 的规矩、商店截图怎么出 |
 | `dev/nga-dom-notes.md` | 人 | NGA 真实结构与出处（改解析必看） |
 | `dev/reference/README.md` | 人 | 第三方脚本索引（不参与构建） |
+| `PRIVACY.md` | 用户 / 商店 | 数据与权限口径（上架必填的隐私政策） |
+| `store/README.md` + `store/listing.md` | 人 | 上架流程与商品页文案（不参与扩展运行） |
 
 状态类内容写在 `TODO.md`，不要散落在其它文档里。
 
@@ -41,7 +43,8 @@ python3 dev/server.py 8765     # 然后打开 http://127.0.0.1:8765/read.php?tid
 
 ```
 extension/
-  manifest.json          MV3：content_scripts(document_start) + web_accessible_resources + popup
+  manifest.json          MV3：content_scripts(document_start) + web_accessible_resources + popup + icons
+  icons/                 扩展图标（由 store/make-icons.py 生成，与伪装 favicon 同一造型）
   src/boot.js            内容脚本入口：藏原站 → 读设置 → 动态 import app.js
   src/app.js             控制器：路由、取页、渲染调度、快捷键、伪装层
   src/core/settings.js   设置的唯一入口（chrome.storage.local，调试时降级 localStorage）
@@ -57,6 +60,7 @@ extension/
   src/styles/boot.css    只做一件事：接管前藏住原站、接管后让位
   src/styles/app.css     设计 token（--ng-*）与全部组件样式
   popup/                 扩展弹窗设置面板
+  demo/                  离线演示页（给商店审核员/没登录的人看；走真实渲染路径）
 ```
 
 数据流：`boot.js → app.js → nga/parse.js → view/*.js → DOM`，`nga/sanitize.js` 由 `view/thread.js` 调用。
@@ -78,6 +82,10 @@ extension/
 - **两个“名字”别搞混**：侧边栏品牌名是 `view/shell.js` 里的常量 `BRAND`（NGA 阅读器）；
   设置里的 `brandText` 只管应急伪装时的标签页标题（标题文案由 popup 里的「标签页标题」控制）。
 - **样式必须能压住原站**：内容区的排版规则写在 `.ngr-content` 下，并显式重置 `div/span/font` 的继承属性；设计 token 用 `--ng-` 前缀，避免与原站变量撞名。
+- **`web_accessible_resources` 只列会被动态 import 的目录**：`src/*.js` + `src/core|nga|view/*.js`。
+  新增 `src/` 子目录要同步 manifest —— 实测漏了就是 `Failed to fetch dynamically imported module`，整个页面回落到原站。
+- **图标与商店素材用脚本生成**（`store/make-icons.py` / `store/make-listing-images.py`），别手改 PNG；
+  `extension/demo/` 是审核员唯一能看到界面的地方，改了 parse/渲染顺手跑一下。
 - **图片的宽高规则必须 `!important`**：接管后原站 JS（`ubbcode.adjImgSize`）仍会给我们的图片副本写内联
   `max-width:<它自己布局的宽度>px`（实测 982~1030px，正文栏才 676px）。同理，克隆图上要把原站的图片钩子
   （`data-argi`/`data-nw`/`data-srcorg`/`data-srclazy`…）摘干净，见 `sanitize.js` 的 `IMAGE_HOOK_ATTRS`。

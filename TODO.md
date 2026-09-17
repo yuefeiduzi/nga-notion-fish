@@ -93,30 +93,26 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
 
 ### 上架（Chrome Web Store / Edge Add-ons）
 
-仓库侧还缺的（都还没做）：
+仓库侧已经备齐（2026-09）：
 
-- [ ] 图标：`extension/icons/{16,32,48,128}.png` + manifest 的 `icons` 与 `action.default_icon`
-      （沿用现在伪装 favicon 那枚青色「R」方块；**别用 NGA 官方图**，避免商标/冒充问题）
-- [ ] `LICENSE`（README 写的是 MIT，但仓库里没有文件）
-- [ ] `PRIVACY.md` + 一个公开 URL（隐私政策字段要填；GitHub blob / Pages 都行）
-- [ ] manifest 补 `homepage_url`；`web_accessible_resources` 收窄 —— 现在是 `src/**/*` 整目录，
-      实际只有 `boot.js` 动态 import 的那几个 `.js` 需要（被 WAR 摊得越宽，审核越容易问）
-- [ ] 打包脚本：zip 内容 = `extension/` 下的文件，`manifest.json` 在根目录
-- [ ] 商店素材：1280×800 截图 ×1~5（Chrome 要 ≥1）、440×280 小图（两家都要）、
-      300×300 logo（Edge）、1400×560 marquee（可选，想上精选才要）
-- [ ] 上架文案：单用途说明、`storage` 与两个域名 host 权限的理由、数据披露口径
-      （只在本机存设置/收藏/最近浏览，不外传，不统计）、无远程代码声明
-- [ ] 让审核员看得到内容：NGA 未登录只会显示引导页 ⇒ CWS 的 **Test instructions** 里写清楚，
-      或者随包附一个 demo 页（`extension/demo/`）让审核员不用 NGA 账号也能看到阅读界面
-- [ ] 命名风险："NGA" 是第三方商标 ⇒ 描述里写明非官方、自绘图标，别暗示与官方有关系
+- [x] 图标：`extension/icons/{16,32,48,128}.png` + manifest 的 `icons` / `action.default_icon`
+      （脚本生成：`store/make-icons.py`；沿用伪装 favicon 那枚青色「R」方块，没有用 NGA 官方图）
+- [x] `LICENSE`（MIT）与 `PRIVACY.md`（商店隐私政策 URL 指向它）
+- [x] manifest 补 `homepage_url`；`web_accessible_resources` 收窄成 `src/*.js` + `src/{core,nga,view}/*.js`
+      （收窄后实测：少了目录就会 `Failed to fetch dynamically imported module`）
+- [x] 打包脚本 `store/pack.sh`（→ `dist/nga-reader-<版本>.zip`，manifest 在包根，不含 dev/、store/）
+- [x] 商店素材：截图 1280×800 ×4、小宣传图 440×280、Edge logo 300×300（生成/重截方法见 `dev/README.md`）
+- [x] 上架文案：单用途、权限理由、隐私披露口径、无远程代码、Test instructions（`store/listing.md`）
+- [x] 审核员看不到 NGA 内容的问题：随包附了离线演示页 `extension/demo/`（走真实渲染路径）
+- [x] 命名风险：图标自绘、文案里写明「第三方非官方工具，与 NGA 官方无关」
 
-平台侧（得账号本人操作，不是代码）：
+还需要人做的：
 
-- **Chrome**：开发者注册一次性 $5；Google 账号必须开两步验证；填 Trader/Non-Trader
-  （EU DSA 要求，免费无内购一般选 Non-Trader，选了 Trader 会公开姓名地址）
-- **Edge**：Partner Center 免费注册；注意注册时填的开发者名 / 网站 / 支持联系方式**会公示**在商品页
-- 审核时长：Chrome 常见几天到两周（提交量大时更久）；Edge 最长 7 个工作日
-- 改版就失效的风险照旧：NGA 改结构后解析会错，上架后要准备及时发版本
+- [ ] Chrome：开两步验证 + 付一次性 $5 注册费 + 填 Trader/Non-Trader（免费无内购选 Non-Trader）
+- [ ] Edge：注册 Partner Center（免费；注册信息里的开发者名 / 网站 / 支持联系方式会公示）
+- [ ] 上传 zip、把 `store/listing.md` 的字段粘进去、填 Test instructions，提交审核
+      （Edge 建议先发，最长 7 个工作日；Chrome 常见几天到两周）
+- [ ] 上架后：NGA 改结构会导致解析失效，需要能快速发版；UI 改了记得重截 `store/images/`
 
 ### 内容与解析
 - [ ] 楼层号：目前按 20 楼/页推算，还没在第 N 页（非首页）上核对过
