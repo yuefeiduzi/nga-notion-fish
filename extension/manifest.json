@@ -1,10 +1,12 @@
 {
     "manifest_version": 3,
     "name": "阅读器 Reader",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "把 NGA 论坛转换成干净的资讯阅读界面：侧边栏导航 + 数字编号的楼层正文，支持暗色模式与无图模式。",
     "minimum_chrome_version": "111",
-    "permissions": ["storage"],
+    "permissions": [
+        "storage"
+    ],
     "host_permissions": [
         "https://ngabbs.com/*",
         "https://*.ngabbs.com/*",
@@ -19,15 +21,23 @@
                 "https://bbs.nga.cn/*",
                 "https://*.nga.cn/*"
             ],
-            "js": ["src/boot.js"],
-            "css": ["src/styles/boot.css", "src/styles/app.css"],
+            "js": [
+                "src/boot.js"
+            ],
+            "css": [
+                "src/styles/boot.css",
+                "src/styles/app.css"
+            ],
             "run_at": "document_start",
             "all_frames": false
         }
     ],
     "web_accessible_resources": [
         {
-            "resources": ["src/*", "src/**/*"],
+            "resources": [
+                "src/*",
+                "src/**/*"
+            ],
             "matches": [
                 "https://ngabbs.com/*",
                 "https://*.ngabbs.com/*",
