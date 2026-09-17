@@ -1,8 +1,15 @@
 {
     "manifest_version": 3,
     "name": "NGA 阅读器",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "description": "把 NGA 论坛（ngabbs.com / bbs.nga.cn）读成一份资讯日报：侧边栏导航 + 数字编号的楼层正文，支持暗色模式、无图模式与图片全屏预览。",
+    "homepage_url": "https://github.com/yuefeiduzi/nga-notion-fish",
+    "icons": {
+        "16": "icons/16.png",
+        "32": "icons/32.png",
+        "48": "icons/48.png",
+        "128": "icons/128.png"
+    },
     "minimum_chrome_version": "111",
     "permissions": [
         "storage"
@@ -35,8 +42,10 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "src/*",
-                "src/**/*"
+                "src/*.js",
+                "src/core/*.js",
+                "src/nga/*.js",
+                "src/view/*.js"
             ],
             "matches": [
                 "https://ngabbs.com/*",
@@ -48,6 +57,12 @@
     ],
     "action": {
         "default_title": "NGA 阅读器 · 设置",
-        "default_popup": "popup/popup.html"
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "icons/16.png",
+            "32": "icons/32.png",
+            "48": "icons/48.png",
+            "128": "icons/128.png"
+        }
     }
 }
