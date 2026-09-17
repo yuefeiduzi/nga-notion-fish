@@ -568,11 +568,6 @@
     font-weight: 500;
 }
 
-.ngr-tag.is-hot {
-    background: rgba(179, 64, 42, 0.12);
-    color: var(--ng-rose);
-}
-
 .ngr-tag.is-pinned {
     background: var(--ng-accent-soft);
     color: var(--ng-accent-fg);
@@ -996,12 +991,6 @@
     height: 14px;
 }
 
-/* 无图模式的兜底（正常情况下表情/图片已在 sanitize 阶段换成占位了）：
-   表情不在此列 —— 它们是文字的一部分，无图模式也要看得见 */
-.ngr-hide-images .ngr-content img:not(.ngr-inline-img) {
-    display: none;
-}
-
 /* ==========================================================================
    分页 / 索引
    ========================================================================== */
@@ -1012,10 +1001,6 @@
     align-items: center;
     gap: 7px;
     margin-top: 26px;
-}
-
-.ngr-pager .ngr-spacer {
-    flex: 1 1 auto;
 }
 
 .ngr-chip {

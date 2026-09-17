@@ -51,7 +51,7 @@ export function svg(paths, size = 16) {
     return node;
 }
 
-export const ICONS = {
+const ICONS = {
     home: 'M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5',
     clock: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
     list: ['M8 6h13', 'M8 12h13', 'M8 18h13', 'M3 6h.01', 'M3 12h.01', 'M3 18h.01'],

@@ -133,7 +133,7 @@ function absolute(href, baseUrl) {
     }
 }
 
-export function hostOf(url) {
+function hostOf(url) {
     try {
         return new URL(url).hostname;
     } catch {
@@ -191,7 +191,7 @@ export function findContentEl(node) {
  * 楼层项：`postArg.data` 里除了楼层还混着贴条/其它东西，
  * 实测只有楼层同时满足「有 contentC 元素」和「有数字 i」。
  */
-export function postArgFloors(doc) {
+function postArgFloors(doc) {
     const view = pageGlobals(doc);
     const arg = view && view.commonui && view.commonui.postArg;
     if (!arg || !arg.data) return [];
@@ -283,7 +283,7 @@ export function routeKind(url) {
 }
 
 /** NGA 站内链接？（需要由我们的路由接管） */
-export function isInternal(url) {
+function isInternal(url) {
     return NGA_HOSTS.test(hostOf(url));
 }
 

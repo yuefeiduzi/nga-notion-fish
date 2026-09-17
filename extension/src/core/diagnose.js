@@ -56,7 +56,7 @@ function snippet(node, limit = 1200) {
 }
 
 /** 收集可复制的诊断文本 */
-export function collectDiagnostics() {
+function collectDiagnostics() {
     const view = typeof window === 'undefined' ? null : window;
     const postArg = view && view.commonui && view.commonui.postArg && view.commonui.postArg.data;
     const topicArg = view && view.commonui && view.commonui.topicArg && view.commonui.topicArg.data;

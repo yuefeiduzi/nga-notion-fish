@@ -6,7 +6,7 @@
  * 这样同一份代码既能跑在扩展里，也能在普通网页里调试。
  */
 
-export const DEFAULTS = {
+const DEFAULTS = {
     enabled: true, // 总开关
     theme: 'auto', // auto | light | dark
     hideImages: true, // 无图模式（摸鱼 + 省流量）
@@ -109,7 +109,7 @@ export async function toggleFavorite(forum) {
 }
 
 /** 当前系统偏好的主题 */
-export function resolveTheme(theme) {
+function resolveTheme(theme) {
     if (theme !== 'auto') return theme;
     if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches) {
         return 'dark';

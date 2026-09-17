@@ -314,7 +314,7 @@ function stripImageHooks(node) {
     IMAGE_HOOK_ATTRS.forEach((attr) => node.removeAttribute(attr));
 }
 
-export function pickImageSrc(img) {
+function pickImageSrc(img) {
     const candidates = [
         img.getAttribute('data-src'),
         img.getAttribute('data-original'),
