@@ -19,6 +19,8 @@ build/
 # Cache
 .cache/
 node_modules/
+__pycache__/
+*.pyc
 
 # Development
 docs/
