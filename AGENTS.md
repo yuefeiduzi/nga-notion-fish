@@ -50,6 +50,8 @@ extension/
   src/core/diagnose.js   一键导出诊断现场（选择器命中数 + 抽取字段 + 首楼 HTML）
   src/nga/parse.js       【核心】Document → 模型（站点数据优先 + 选择器兜底 + blocked 识别）
   src/nga/sanitize.js    【核心】正文克隆净化 → 可排版的 DOM
+  src/nga/lazy-images.js 唤醒 NGA 图片懒加载（临时给原站布局 + scrollIntoView）
+  src/view/lightbox.js   图片全屏预览（缩放/拖动/切换）
   src/view/shell.js      外壳：侧边栏、主题开关、应急伪装页、toast
   src/view/parts.js      页头 / 分页器 / 按钮 / 空态
   src/view/{home,board,thread}.js   三类页面的渲染
@@ -103,6 +105,9 @@ extension/
 2. **解析前要等就绪**：`app.js` 的 `waitForTarget()` —— 帖子页等的不是「行存在」，而是
    「`contentC` 已经是正文元素」（NGA 先给容器、后给正文）。
 3. **解析后要自愈**：抓到包装层时 `selfHeal()` 会隔 600ms 重解析，最多 8 次。
+4. **图片另说**：NGA 的图要滚进视口才写 `src`，而我们把原站 `display:none` 了 —— 所以
+   「显示图片」要先走 `wakeLazyImages()`（把原站临时切成有布局但 opacity:0），再重渲染。
+   这里有个 CSS 权重坑：覆盖 `.ngr-active body > *` 那条隐藏规则必须用 id 选择器。
 
 ## 注意事项
 

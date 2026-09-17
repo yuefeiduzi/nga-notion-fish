@@ -814,21 +814,32 @@
 
 .ngr-content img {
     display: block;
+    width: auto;
     max-width: 100%;
+    /* 图片框限高：一张竖图不该占满整屏，点开才是看大图的地方 */
+    max-height: 70vh;
     height: auto;
     margin: 14px 0;
     border: 1px solid var(--ng-border);
     border-radius: 10px;
     background: var(--ng-surface-0);
+    cursor: zoom-in;
+    transition: border-color var(--ng-dur-fast) ease;
 }
 
-/* 表情/小图标不参与大图排版 */
+.ngr-content img:hover {
+    border-color: var(--ng-accent);
+}
+
+/* 表情/小图标不参与大图排版，也不进预览 */
 .ngr-content img.ngr-inline-img {
     display: inline-block;
+    max-height: none;
     margin: 0 2px;
     border: 0;
     border-radius: 0;
     vertical-align: -3px;
+    cursor: default;
 }
 
 /* 引用（NGA 的 .quote 会被净化成 blockquote） */
@@ -1139,6 +1150,157 @@
 .ngr-star svg {
     width: 14px;
     height: 14px;
+}
+
+/* ==========================================================================
+   图片全屏预览
+   ========================================================================== */
+
+html.ngr-preview-open .ngr-main {
+    overflow: hidden;
+}
+
+.ngr-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(8, 11, 13, 0.97);
+    backdrop-filter: blur(3px);
+}
+
+.ngr-lightbox[hidden] {
+    display: none;
+}
+
+.ngr-lb-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+}
+
+.ngr-lb-img {
+    max-width: 96vw;
+    max-height: 92vh;
+    border-radius: 6px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    transform-origin: center center;
+    transition: transform 0.12s ease-out;
+    will-change: transform;
+}
+
+.ngr-lightbox.is-zoomed .ngr-lb-img {
+    cursor: grab;
+}
+
+.ngr-lightbox.is-dragging .ngr-lb-img {
+    cursor: grabbing;
+    transition: none;
+}
+
+.ngr-lb-bar {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ngr-lb-counter {
+    margin-right: 4px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: var(--ng-mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.ngr-lb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition:
+        background var(--ng-dur-fast) ease,
+        color var(--ng-dur-fast) ease;
+}
+
+.ngr-lb-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.ngr-lb-nav {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 68px;
+    margin-top: -34px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition:
+        background var(--ng-dur-fast) ease,
+        color var(--ng-dur-fast) ease;
+}
+
+.ngr-lb-nav:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.ngr-lb-nav[hidden] {
+    display: none;
+}
+
+.ngr-lb-nav.is-prev {
+    left: 14px;
+}
+
+.ngr-lb-nav.is-next {
+    right: 14px;
+}
+
+.ngr-lb-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    z-index: 2;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .ngr-lb-hint {
+        display: none;
+    }
+
+    .ngr-lb-nav {
+        width: 36px;
+        height: 56px;
+        margin-top: -28px;
+    }
 }
 
 /* ==========================================================================

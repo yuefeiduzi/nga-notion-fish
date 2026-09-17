@@ -297,22 +297,28 @@ function processImages(root, baseUrl, hideImages, options) {
 
         const rawSrc = pickImageSrc(node);
         const src = absolute(rawSrc, baseUrl);
-        const width = Number(node.getAttribute('width')) || 0;
-        const height = Number(node.getAttribute('height')) || 0;
+        // 实测 NGA 大量用 179x1 这种 1px 图做占位/间隔，正文里不该出现
+        const declaredW = Number(node.getAttribute('data-nw') || node.getAttribute('width')) || 0;
+        const declaredH = Number(node.getAttribute('data-nh') || node.getAttribute('height')) || 0;
+        if (declaredW && declaredH && declaredW <= 4 && declaredH <= 4 && !INLINE_IMAGE_RE.test(rawSrc)) {
+            node.remove();
+            return;
+        }
+        const width = declaredW;
+        const height = declaredH;
         const isSmall = (width && width <= 28) || (height && height <= 28) || INLINE_IMAGE_RE.test(rawSrc);
         const alt = node.getAttribute('alt') || node.getAttribute('title') || '';
 
         if (!src) {
             // 拿不到地址：NGA 的图片是懒加载的，没滚动到就一直是 about:blank。
             // 不要静默删掉（会凭空少内容），给一个能点回原站的占位。
-            const fallback = document.createElement('a');
-            fallback.className = 'ngr-img-ph';
-            fallback.href = options.url || options.baseUrl || location.href;
-            fallback.target = '_blank';
-            fallback.rel = 'noopener noreferrer';
-            fallback.title = '这张图在原站是懒加载的，需要滚动才会加载';
+            const fallback = document.createElement('button');
+            fallback.type = 'button';
+            fallback.className = 'ngr-img-ph is-lazy';
+            fallback.dataset.lazy = '1';
+            fallback.title = 'NGA 的图要滚进视口才加载，点一下让我去取';
             fallback.appendChild(icon('image', 14));
-            fallback.appendChild(document.createTextNode('图片（懒加载，点原站查看）'));
+            fallback.appendChild(document.createTextNode('图片（点击加载）'));
             node.replaceWith(fallback);
             return;
         }
@@ -344,33 +350,10 @@ function processImages(root, baseUrl, hideImages, options) {
         holder.dataset.alt = alt;
         holder.title = alt || src;
         holder.appendChild(icon('image', 14));
-        holder.appendChild(document.createTextNode(alt ? `图片 · ${alt.slice(0, 40)}` : '图片（点击加载）'));
-        holder.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            revealPlaceholder(holder);
-        });
+        holder.appendChild(document.createTextNode(alt ? `图片 · ${alt.slice(0, 40)}` : '图片'));
+        // 点击行为统一由 app.js 接管（打开全屏预览），这里只负责产出占位
         node.replaceWith(holder);
     });
-}
-
-/** 把单个占位符换成真图 */
-export function revealPlaceholder(placeholder) {
-    const img = document.createElement('img');
-    img.setAttribute('src', placeholder.dataset.src || '');
-    img.setAttribute('loading', 'lazy');
-    img.setAttribute('decoding', 'async');
-    if (placeholder.dataset.alt) img.setAttribute('alt', placeholder.dataset.alt);
-    placeholder.replaceWith(img);
-    return img;
-}
-
-/** 整页「显示图片」：把当页所有占位符替换为真图 */
-export function revealAllImages(root) {
-    const placeholders = Array.from(root.querySelectorAll('.ngr-img-ph'));
-    placeholders.forEach((item) => revealPlaceholder(item));
-    root.classList.remove('ngr-hide-images');
-    return placeholders.length;
 }
 
 /* --------------------------------------------------------------------------

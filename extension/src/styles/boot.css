@@ -30,3 +30,29 @@ html.ngr-active .tp,
 html.ngr-active .mask {
     display: none !important;
 }
+
+/* --------------------------------------------------------------------------
+   唤醒懒加载图片时（nga/lazy-images.js）：
+   把原站临时切成「有布局、看不见、摸不到」，这样图片才会进视口被加载。
+   加载完立刻移除这个类，原站重新变回 display:none。
+   -------------------------------------------------------------------------- */
+html.ngr-waking,
+html.ngr-waking body {
+    overflow: auto !important;
+    height: auto !important;
+}
+
+/* 注意特异性：上面「隐藏 body > *」那条带 4 个 :not()，权重很高，
+   这里必须用 id 才压得住 —— 之前用 body > * 覆盖，结果 display 还是 none，
+   图片永远进不了视口，唤醒就成了空转。 */
+html.ngr-waking.ngr-active #mmc,
+html.ngr-waking #mmc {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 1280px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+}

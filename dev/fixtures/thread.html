@@ -165,6 +165,9 @@
                                         走位示意图：
                                         <img src="/dev/fixtures/route.png" data-argi="0" data-srcorg="" alt="走位示意图" />
                                         <br />
+                                        以及一张很长的竖图（正文里应该被限高，点开才看全）：
+                                        <img src="/dev/fixtures/position.png" data-argi="1" data-srcorg="" alt="长图" />
+                                        <br />
                                         <!-- 实测：折叠内容默认是空的，点击才由 NGA 的 JS 去拉 -->
                                         <div class="collapse_btn"><button onclick="void 0" type="button" name="collapseSwitchButton">+</button> 展开：下半具体循环</div>
                                         <div class="collapse_content" style="display:none"></div>
@@ -176,6 +179,8 @@
                                         表情测试：<img src="/dev/fixtures/smile.gif" alt="笑" width="20" height="20" />
                                         <br />
                                         原始数据来源：<a href="https://example.com/axis-table" target="_blank">example.com 轴表</a>
+                                        <br />
+                                        懒加载测试：<img id="lazyTestImg" src="about:blank" data-argi="2" alt="" />
                                         <h4 class="silver subtitle postbodysubtitle">附件</h4>
                                         <span id="postattach0"><a href="javascript:void(0)" class="contentFullWidthButton" onclick="void 0">展开附件</a></span>
                                     
@@ -215,6 +220,22 @@
                 var target = document.getElementById('postcontent' + index);
                 if (target) target.innerHTML = tpl.innerHTML;
             });
+        </script>
+
+        <script>
+            // 复刻 NGA 的图片懒加载：滚进视口才把真地址写进 src（供唤醒流程测试）
+            (function () {
+                var img = document.getElementById('lazyTestImg');
+                if (!img) return;
+                var fill = function () {
+                    var rect = img.getBoundingClientRect();
+                    if (img.getAttribute('src') === 'about:blank' && rect.top < innerHeight && rect.bottom > 0) {
+                        img.setAttribute('src', '/dev/fixtures/loop.png');
+                    }
+                };
+                window.addEventListener('scroll', fill);
+                setInterval(fill, 300);
+            })();
         </script>
 
         <script>

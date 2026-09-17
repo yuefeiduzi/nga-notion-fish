@@ -5,14 +5,15 @@
  * 这一层不做任何 DOM 解析（在 nga/parse.js）也不做任何排版（在 view/）。
  */
 
-import { parsePage, routeKind, detectBlocked, cleanText, PAGE } from './nga/parse.js';
+import { parsePage, routeKind, detectBlocked, isPostContentReady, findContentEl, PAGE } from './nga/parse.js';
 import { renderHome } from './view/home.js';
 import { renderBoard } from './view/board.js';
 import { renderThread } from './view/thread.js';
 import { createShell } from './view/shell.js';
+import { createLightbox } from './view/lightbox.js';
+import { wakeLazyImages, pendingImageCount } from './nga/lazy-images.js';
 import { button, notice, skeletonPage } from './view/parts.js';
 import { copyDiagnostics } from './core/diagnose.js';
-import { revealAllImages } from './nga/sanitize.js';
 import {
     getSettings,
     patchSettings,
@@ -34,6 +35,7 @@ const state = {
     settings: null,
     model: null,
     shell: null,
+    lightbox: null,
     originalTitle: '',
     faviconNodes: [],
     lastEscape: 0,
@@ -66,6 +68,8 @@ export async function start(settings) {
     applyFontScale(settings);
 
     state.shell = createShell(buildContext());
+    state.lightbox = createLightbox();
+    state.shell.root.appendChild(state.lightbox.node);
 
     // 先把壳和骨架屏画出来：NGA 的正文要等它自己的 JS 注入，
     // 与其让用户盯着白屏，不如先让他们看到我们的界面（这里也是摘掉 ngr-pending 的时机）
@@ -81,6 +85,9 @@ export async function start(settings) {
     const model = await parseLive(location.href);
     render(model);
     selfHeal(kind);
+
+    // 图片模式：渲染完主动去催一次（NGA 的图要滚进视口才给地址，不催就永远是占位）
+    if (!state.settings.hideImages) loadImages('图片已加载');
 
     bindEvents();
     state.unsubscribe = onSettingsChanged(handleExternalSettingsChange);
@@ -147,23 +154,13 @@ const READY_SELECTORS = {
  * 所以这里直接问站点数据：每一层的 contentC 是不是正文元素（或者里面已经有正文元素了）。
  */
 function threadContentReady() {
-    const view = window;
-    const arg = view.commonui && view.commonui.postArg;
-    const items = arg && arg.data ? Object.values(arg.data) : [];
+    const fromData = isPostContentReady(document);
+    if (fromData !== null) return fromData;
 
-    if (items.length) {
-        return items.every((item) => {
-            const node = item && item.contentC;
-            if (!node || node.nodeType !== 1) return false;
-            if (node.id && /^postcontent/i.test(node.id)) return true;
-            return Boolean(node.querySelector && node.querySelector('[id^="postcontent"], .postcontent'));
-        });
-    }
-
-    // 站点数据还没挂上（它比楼层行晚）—— 退一步只看 DOM：首楼正文得真的有东西
-    const content = document.querySelector('[id^="postcontent"]');
+    // 站点数据还没挂上（它比楼层行晚）—— 退一步只看 DOM：正文元素得真的有东西
+    const content = findContentEl(document.body || document.documentElement);
     if (!content) return false;
-    return content.childNodes.length > 1 || cleanText(content.textContent).length > 40;
+    return content.childNodes.length > 1 || content.textContent.trim().length > 40;
 }
 
 /**
@@ -337,6 +334,12 @@ function openOriginal(url) {
 function onKeyDown(event) {
     const target = event.target;
     if (target && /input|textarea|select/i.test(target.tagName)) return;
+
+    // 预览层打开时由它接管（Esc / ←→ / ±），其它页面快捷键一律不响应
+    if (state.lightbox && state.lightbox.isOpen()) {
+        if (state.lightbox.handleKey(event.key)) event.preventDefault();
+        return;
+    }
     if (event.metaKey || event.ctrlKey || event.altKey) return;
 
     // 连按两下 Esc：应急伪装
@@ -429,17 +432,32 @@ async function cycleTheme() {
     state.shell.toast(`主题：${{ light: '浅色', dark: '深色', auto: '跟随系统' }[next]}`);
 }
 
-async function toggleImages(force, buttonNode) {
+async function toggleImages(force) {
     const next = typeof force === 'boolean' ? force : !state.settings.hideImages;
-    if (!next) {
-        const count = revealAllImages(state.shell.root);
-        await updateSettings({ hideImages: false });
-        state.shell.toast(count ? `已加载 ${count} 张图片` : '已切换为显示图片');
-    } else {
+
+    if (next) {
         await updateSettings({ hideImages: true });
         state.shell.toast('已切换为无图模式');
+        return next;
     }
+
+    await updateSettings({ hideImages: false });
+    await loadImages('已切换为显示图片');
     return next;
+}
+
+/**
+ * 显示图片 = 「唤醒懒加载 → 重渲染」。
+ * NGA 的图要滚进视口才写 src，所以先让原站临时有布局、滚一遍，再重新解析渲染。
+ */
+async function loadImages(doneMessage) {
+    const loaded = await wakeLazyImages();
+    if (state.model) render(state.model, { keepScroll: true });
+
+    const pending = pendingImageCount();
+    if (loaded) state.shell.toast(`${doneMessage} · 新加载 ${loaded} 张`);
+    else if (pending) state.shell.toast(`没催出图片（还有 ${pending} 张拿不到地址）`);
+    else state.shell.toast(doneMessage);
 }
 
 async function updateSettings(patch) {
@@ -525,6 +543,48 @@ function buildContext() {
    事件绑定
    -------------------------------------------------------------------------- */
 
+/**
+ * 点击正文图片打开全屏预览。
+ * 之前「点图片没反应」就是因为图片只在两种占位态有处理（占位按钮 = 加载、懒加载锚点 = 去原站），
+ * 真图（显示图片模式 / 加载后的图）压根没有监听。这里统一在文档级兜住。
+ */
+function onImageClick(event) {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const target = event.target;
+    if (!target || !target.closest) return;
+
+    // 1) 懒加载占位（原站还没给我们地址）→ 去催一次
+    const lazy = target.closest('.ngr-img-ph.is-lazy, [data-lazy]');
+    if (lazy) {
+        event.preventDefault();
+        loadImages('图片已更新');
+        return;
+    }
+
+    // 2) 无图模式下的占位（地址已知）→ 直接全屏看
+    const holder = target.closest('.ngr-img-ph[data-src]');
+    if (holder) {
+        event.preventDefault();
+        state.lightbox.open([holder.dataset.src], 0);
+        return;
+    }
+
+    // 3) 正文里的真图 → 打开预览，可左右切换同楼层的图
+    const img = target.closest('.ngr-content img');
+    if (!img || img.classList.contains('ngr-inline-img')) return;
+
+    const src = img.currentSrc || img.src;
+    if (!src || src.startsWith('data:')) return;
+
+    event.preventDefault();
+    const list = state.lightbox.collect(img);
+    state.lightbox.open(list.length ? list : [src], Math.max(0, list.indexOf(src)));
+}
+
 function bindEvents() {
     document.addEventListener('keydown', onKeyDown);
+    // 用冒泡阶段：占位按钮自己的处理器会先跑并 stopPropagation，不会误触发预览
+    document.addEventListener('click', onImageClick);
 }

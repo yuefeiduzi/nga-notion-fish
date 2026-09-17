@@ -166,7 +166,7 @@ function pageGlobals(doc) {
  */
 const CONTENT_ID_RE = /^postcontent\d+$/i;
 
-function findContentEl(node) {
+export function findContentEl(node) {
     if (!isElement(node)) return null;
     if (CONTENT_ID_RE.test(node.id || '')) return node;
 
@@ -187,12 +187,30 @@ function findContentEl(node) {
  * 坑：NGA 自己渲染的过程中 contentC 会先指向容器（td），渲染完才变成正文元素，
  * 所以这里统一归一化 —— 只要不是正文元素，就往里找 `[id^=postcontent]`。
  */
-function readPostArg(doc) {
+/**
+ * 楼层项：`postArg.data` 里除了楼层还混着贴条/其它东西，
+ * 实测只有楼层同时满足「有 contentC 元素」和「有数字 i」。
+ */
+export function postArgFloors(doc) {
     const view = pageGlobals(doc);
     const arg = view && view.commonui && view.commonui.postArg;
-    if (!arg || !arg.data) return null;
+    if (!arg || !arg.data) return [];
+    return Object.values(arg.data).filter((item) => isElement(item && item.contentC) && 'i' in item);
+}
 
-    const items = Object.values(arg.data).filter((item) => isElement(item && item.contentC) && 'i' in item);
+/**
+ * 站点数据里每层楼的正文元素是否已经就位。
+ * 实测 NGA 是分阶段渲染：楼层行/容器先出现，正文元素后出现（contentC 一度指向容器）。
+ * @returns {boolean|null} null 表示页面还没有站点数据，调用方自己用 DOM 判断
+ */
+export function isPostContentReady(doc) {
+    const floors = postArgFloors(doc);
+    if (!floors.length) return null;
+    return floors.every((item) => Boolean(findContentEl(item.contentC)));
+}
+
+function readPostArg(doc) {
+    const items = postArgFloors(doc);
     if (!items.length) return null;
 
     return items.map((item, index) => {
