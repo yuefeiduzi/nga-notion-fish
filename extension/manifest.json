@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "NGA 阅读器",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "description": "把 NGA 论坛（ngabbs.com / bbs.nga.cn）读成一份资讯日报：侧边栏导航 + 数字编号的楼层正文，支持暗色模式、无图模式与图片全屏预览。",
     "homepage_url": "https://github.com/yuefeiduzi/nga-notion-fish",
     "icons": {

@@ -233,3 +233,17 @@ input[type='checkbox']:checked::after {
     font-size: 11px;
     line-height: 1.6;
 }
+
+.pop-version {
+    float: right;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.8;
+}
+
+/* 版本号单独一行：和快捷键提示挤在一起会把提示挤到第二行 */
+.pop-meta {
+    padding-top: 2px;
+    color: var(--p-text-dim);
+    font-size: 11px;
+    text-align: right;
+}

@@ -77,6 +77,12 @@ function renderFavorites(list) {
 
 renderFavorites(settings.favorites);
 
+/* ---- 版本号 ---- */
+
+// 从 manifest 读，不写死在 HTML 里（否则升级时忘了改）
+const versionNode = document.getElementById('pop-version');
+if (versionNode) versionNode.textContent = `v${chrome.runtime.getManifest().version}`;
+
 /* ---- 底部行为 ---- */
 
 document.getElementById('open-nga').addEventListener('click', () => {

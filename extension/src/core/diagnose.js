@@ -6,7 +6,7 @@
  * 变成一段可以贴给开发者的文本 —— 比截图和口头描述有用得多。
  */
 
-import { routeKind, cleanText } from '../nga/parse.js';
+import { routeKind, parsePageInfo, cleanText } from '../nga/parse.js';
 
 const INTERESTING = [
     '#mmc',
@@ -55,6 +55,15 @@ function snippet(node, limit = 1200) {
     return html.length > limit ? `${html.slice(0, limit)}…（截断，共 ${html.length} 字符）` : html;
 }
 
+/** 扩展版本（版本号只写在 manifest 里，这里现读）；在样例页的 harness 里没有 manifest，回退成 dev */
+function extensionVersion() {
+    try {
+        return chrome.runtime.getManifest().version;
+    } catch {
+        return 'dev';
+    }
+}
+
 /** 收集可复制的诊断文本 */
 function collectDiagnostics() {
     const view = typeof window === 'undefined' ? null : window;
@@ -75,18 +84,21 @@ function collectDiagnostics() {
 
     const lines = [
         '=== NGA 阅读器诊断 ===',
+        `版本: ${extensionVersion()}`,
         `时间: ${new Date().toISOString()}`,
         `url: ${location.href}`,
         `routeKind: ${routeKind(location.href)}`,
         `document.title: ${document.title}`,
         `readyState: ${document.readyState}`,
         `__PAGE: ${JSON.stringify(view && view.__PAGE)}`,
-        `commonui: ${view && view.commonui ? '有' : '无'}；postArg.data: ${
-            postArg ? Object.keys(postArg).length : '无'
-        } 项；topicArg.data: ${topicArg ? Object.keys(topicArg).length : '无'} 项`,
+        `commonui: ${view && view.commonui ? '有' : '无'}（隔离世界里永远是「无」，见 TODO）`,
+        `postArg.data: ${postArg ? Object.keys(postArg).length : '无'} 项；topicArg.data: ${
+            topicArg ? Object.keys(topicArg).length : '无'
+        } 项`,
         `扩展状态: html.ngr-active=${document.documentElement.classList.contains('ngr-active')}, #ngr-root=${
             document.getElementById('ngr-root') ? '有' : '无'
         }`,
+        `当前页页码: ${JSON.stringify(parsePageInfo(document, location.href))}`,
         '',
         '--- 关键选择器命中数 ---',
         JSON.stringify(hits, null, 0),
