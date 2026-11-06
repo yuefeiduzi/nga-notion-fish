@@ -73,6 +73,8 @@ const SEL = {
     postContent: ['[id^="postcontent"]', '.postcontent', '.ubbcode', '.post_content'],
     postSubject: ['[id^="postsubject"]', '.postsubject'],
     postAuthorBlock: ['[id^="postauthor"]', '.posterInfoLine', '[id^="posterinfo"]', '.posterinfo', 'td.c1'],
+    // 作者链接本身：昵称被 NGA 拆成「染色首字 + 兄弟文本」，只有整条链接的文本是完整昵称
+    postAuthorLink: ['a#postauthor', 'a[id^="postauthor"]', 'a.userlink.author', 'a.userlink', 'a[href*="uid="]'],
     postAuthorName: ['.author', 'a.userlink', '.block_txt', '[name="uid"]'],
     postTime: ['[id^="postdate"]', '.postdatec', '.postdate', '.postInfo'],
     postFloor: ['[id^="postnum"]', '.postfloor', '[class*="postfloor"]'],
@@ -683,16 +685,28 @@ function pickTime(row) {
     return match ? match[0] : '';
 }
 
+const AUTHOR_LINK_SELECTOR = SEL.postAuthorLink.join(',');
+
+function isAuthorLink(node) {
+    return isElement(node) && node.tagName === 'A' && node.matches(AUTHOR_LINK_SELECTOR);
+}
+
 function pickAuthor(row, preferEl) {
     const block = preferEl || (row ? first(row, SEL.postAuthorBlock) : null);
-    const nameEl = block ? first(block, SEL.postAuthorName) : row ? first(row, SEL.postAuthorName) : null;
+    // 注意先取「链接」再取名字：
+    // NGA 把昵称首字染成 <b class="block_txt">湘</b>，其余字符是它后面的兄弟文本节点
+    // （`<a ...><b class="block_txt">湘</b>篁</a>`）。早先只读 `.block_txt` 的 textContent，
+    // 真机上整页作者都只剩一个字（t / 湘 / 永 …）。完整昵称只在作者链接 <a> 上。
     const link =
-        (nameEl && nameEl.tagName === 'A' && nameEl) ||
-        (block && first(block, ['a[href*="uid="]', 'a.userlink'])) ||
-        (row && first(row, ['a[href*="uid="]', 'a.userlink'])) ||
-        null;
+        (isAuthorLink(block) ? block : null) ||
+        (block ? first(block, SEL.postAuthorLink) : null) ||
+        (row ? first(row, SEL.postAuthorLink) : null);
+    const nameEl = block ? first(block, SEL.postAuthorName) : row ? first(row, SEL.postAuthorName) : null;
     return {
-        name: cleanText(nameEl && nameEl.textContent) || cleanText(block && block.textContent).slice(0, 24),
+        name:
+            cleanText(link && link.textContent) ||
+            cleanText(nameEl && nameEl.textContent) ||
+            cleanText(block && block.textContent).slice(0, 24),
         url: absolute(link && link.getAttribute('href'), row && row.baseURI ? row.baseURI : location.href),
         uid: ((link && link.getAttribute('href')) || '').match(/uid=(-?\d+)/)?.[1] || '',
     };
@@ -736,7 +750,8 @@ function parsePosts(doc, url, page) {
             posts.push({
                 pid: item.pid,
                 floor: offset + index + 1,
-                isOp: index === 0,
+                // 「楼主」只可能是第 1 页的第一楼；第 2 页起首楼只是本页第一楼
+                isOp: page.current === 1 && index === 0,
                 author: author.name || '匿名',
                 authorUrl: author.url,
                 uid: item.uid || author.uid,
@@ -776,10 +791,20 @@ function parsePosts(doc, url, page) {
         const subjectEl = first(row, SEL.postSubject);
         const recommendText = cleanText((first(row, SEL.postRecommend) || {}).textContent || '');
 
+        // 实测（2026-11 真机）：**每一层楼**的 tr 都有 id=post1strow{N}，N 是 NGA 的楼层号，
+        // 首楼为 0，删楼后会跳号。它同时是「楼层号」和「是不是首楼」最可靠的来源。
+        // 早先用 `/post1strow/i` 前缀判断，结果整页每一层都被标成了楼主。
+        // 样例页是静态单页 HTML，翻到 page=2 时 id 仍从 0 开始，所以只信任
+        // 「不小于按分页推算的页首楼层」的 id。
+        const rowIdMatch = /^post1strow(\d+)$/.exec(row.id || '');
+        const rowFloor = rowIdMatch ? Number(rowIdMatch[1]) + 1 : 0;
+        const trustRowFloor = rowFloor >= offset + 1;
+
         posts.push({
             pid: pidMatch ? pidMatch[1] : '',
-            floor: floorDigits || offset + index + 1,
-            isOp: index === 0 || /post1strow/i.test(row.id || ''),
+            // 兜底才是「20 楼/页」的估算（只在不认识 id 的老页面上用）
+            floor: floorDigits || (trustRowFloor ? rowFloor : 0) || offset + index + 1,
+            isOp: trustRowFloor ? rowFloor === 1 : page.current === 1 && index === 0,
             author: author.name || '匿名',
             authorUrl: author.url,
             uid: author.uid,

@@ -32,10 +32,10 @@
 #m_posts.module_wrap
 └── #m_posts_c.w100
     └── table.forumbox.postbox            ← 注意：**整页所有楼层共用一张表**
-        └── tbody > tr.postrow.row1|row2  ← 「一层楼」是 tr；首楼 id=post1strow0，其余无 id
+        └── tbody > tr.postrow.row1|row2  ← 「一层楼」是 tr；每层都有 id=post1strow{N}（N 为楼层号，首楼 0）
             ├── td.c1
             │   └── span#posterinfo{N}.posterinfo
-            │       ├── a#postauthor{N}.userlink.author > b.block_txt   ← 昵称
+            │       ├── a#postauthor{N}.userlink.author   ← 昵称（首字被拆进 <b.block_txt>）
             │       ├── img#posteravatar{N}.avatar
             │       └── .stat / .userval / .medalimg / .stat_spacer     ← 发帖数、勋章…
             └── td#postcontainer{N}.c2
@@ -53,6 +53,13 @@
 
 **踩过的坑** ✅
 
+- **每一层楼都有 `id="post1strow{N}"`**（2026-11 真机），不是只有首楼有。N 是 NGA 的楼层号：
+  首楼 `post1strow0`，删楼后会跳号（实测第 2 页从 `post1strow22` 开始）。
+  所以「是不是楼主」只能认 `N === 0`，用 `/post1strow/i` 前缀判断会把整页楼层都标成楼主。
+- **昵称不是 `.block_txt` 的全部**：NGA 把首字染成
+  `<a id="postauthor{N}" class="userlink author"><b class="block_txt">湘</b>篁</a>`，
+  `.block_txt` 只有首字，剩余字符是它的兄弟文本节点。完整昵称要取作者链接 `<a>` 的
+  `textContent`（2026-11 真机：只读 `.block_txt` 会导致整页作者只剩一个字）。
 - `[id^="postcontent"]` 会先命中包装层 `#postcontentandsubject{N}`，而且它在文档序里更靠前。
   判定正文必须精确到 `^postcontent\d+$`（`parse.js` 的 `CONTENT_ID_RE`），
   否则渲染出来的是「锁定角标 + 标题 + 正文」的外壳。

@@ -109,6 +109,17 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
       把下一页 AJAX 拉回来并 `history.pushState` 改地址栏 → 现在在捕获阶段把手势闸掉
       （`app.js` 的 `muteHiddenGestures`，真机已验证）；顺手把原站的插播广告中转页弹回原地址
 
+### 用出来的两个问题 + 一个顺手修（2026-11-06，已在真机修完）
+
+- [x] **楼层作者只剩一个字**（`t` / `湘` / `永`）：NGA 把昵称首字染成
+      `<b class="block_txt">湘</b>`，其余字符是它后面的兄弟文本节点；旧代码读 `.block_txt`
+      的 textContent，整页作者就只剩首字。现在取作者链接 `<a>` 的整段文本（`parse.js` 的 `pickAuthor`）。
+- [x] **每一楼都带「楼主」标签**：真机上每层 `<tr>` 都有 `id="post1strow{N}"`（N 是楼层号，
+      首楼 0），旧代码用 `/post1strow/i` 前缀匹配，整页全中。现在只认 N=0；楼层号也改用
+      N+1 精确取（删楼跳号也准，不再按 20 楼/页硬推），第 2 页起不会误标。
+- [x] 顺手修：第 2 页的「只看楼主」原来拿本页第一楼的 uid 去拼，会跳到另一个人；
+      现在只在第 1 页（或已经在只看楼主视图里）出这个按钮。
+
 ### 上架（Chrome Web Store / Edge Add-ons）
 
 仓库侧已经备齐（2026-09）：
@@ -139,7 +150,7 @@ python3 dev/server.py 8765   # 只改代码时才需要：样例页跑通再去�
       影响：赞数（`recommend`）、`pid`、`floor` 这些只有站点数据才稳。修法：加一个
       `world: "MAIN"` 的小桥接脚本（或 `chrome.scripting` 注 main world），把 `postArg/topicArg/__PAGE`
       通过 `postMessage`/`CustomEvent` 递过来；顺带 `waitForTarget()` 的 `isPostContentReady()` 也能真正生效。
-- [ ] 楼层号：目前按 20 楼/页推算，还没在第 N 页（非首页）上核对过
+- [x] 楼层号：2026-11 真机核对，改用每层 `tr#post1strow{N}` 的 N+1 精确取（删楼跳号也准）；20 楼/页只做兜底
 - [ ] `postBtnPos` 里的赞踩按钮是 JS 后填的，真机上常为空（赞数改用站点数据 `recommend`）
 - [ ] 引用块里的图拿不到地址（原站把它裁掉了），现在是「点击加载」占位点了没反应
 - [ ] 贴条（`.comment_c_*`）目前整块丢弃，考虑做成「查看贴条」折叠

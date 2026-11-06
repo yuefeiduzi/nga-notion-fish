@@ -11,6 +11,7 @@ export function renderThread(model, ctx) {
     const wrap = el('div', { class: 'ngr-page ngr-reading' });
     const board = model.board || {};
     const hideImages = ctx.settings.hideImages;
+    const onlyAuthorHref = onlyAuthorUrl(model);
 
     wrap.appendChild(
         pageHead({
@@ -35,8 +36,8 @@ export function renderThread(model, ctx) {
                     active: hideImages,
                     onclick: (event) => ctx.toggleImages(undefined, event.currentTarget),
                 }),
-                model.posts[0] && model.posts[0].uid
-                    ? linkButton('只看楼主', onlyAuthorUrl(model), {
+                onlyAuthorHref
+                    ? linkButton('只看楼主', onlyAuthorHref, {
                           active: Boolean(model.onlyAuthor),
                       })
                     : null,
@@ -64,8 +65,14 @@ export function renderThread(model, ctx) {
 
 function onlyAuthorUrl(model) {
     const url = new URL(model.url, location.href);
+    // 已经在「只看楼主」里：保留当前地址（关闭由原站链接负责）
+    if (model.onlyAuthor) return url.href;
+    // 楼主 uid 只有第 1 页能可靠拿到；第 2 页起 posts[0] 只是本页第一楼，
+    // 拿它拼「只看楼主」会跳到另一个人（真机复现过），宁可不出这个按钮。
+    if (model.page.current > 1) return '';
     const uid = model.posts[0] && model.posts[0].uid;
-    if (uid) url.searchParams.set('authorid', uid);
+    if (!uid) return '';
+    url.searchParams.set('authorid', uid);
     return url.href;
 }
 

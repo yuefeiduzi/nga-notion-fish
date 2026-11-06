@@ -109,8 +109,10 @@ extension/
   进这种页面后母版块在面包屑的上一级（侧边栏要把母版块列出来）
   回复数在 `td.c1 a.replies`、标题 `td.c2 a.topic`、标签 `span.titleadd2 a` 或标题内嵌 `span.t_k_c{n}`、
   作者 `td.c3 a.author`、时间 `td.c3 span.silver.postdate`、最后回复 `td.c4 a.replydate` + `.replyer`
-- 帖子页 `/read.php`：`#m_posts_c > table.forumbox.postbox`（**整页共用一张表**），楼层是 `tr.postrow`；
-  作者 `td.c1 span#posterinfo{N}.posterinfo > a#postauthor{N}.author`；正文是
+- 帖子页 `/read.php`：`#m_posts_c > table.forumbox.postbox`（**整页共用一张表**），楼层是 `tr.postrow`，
+  **每层都有 `id=post1strow{N}`（N=楼层号，首楼 0，删楼跳号）**；作者
+  `td.c1 span#posterinfo{N}.posterinfo > a#postauthor{N}.userlink.author`——昵称首字被拆进
+  `<b class="block_txt">湘</b>`，其余是兄弟文本节点，**完整昵称取 `<a>` 的 textContent**；正文是
   `p#postcontent{N}.postcontent.ubbcode`（**别用 `[id^=postcontent]`，会先命中包装层
   `#postcontentandsubject{N}`**）；时间 `span#postdate{N}`；标题 `h3#postsubject{N}`
 - 正文里：`.quote`、`.collapse_btn` + `.collapse_content`（内容默认空）、`[id^="postsign"]`（签名，删）、
