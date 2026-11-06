@@ -84,6 +84,10 @@ extension/
   扩展里实际走的是选择器兜底；也别指望改原站函数（只能从事件层拦）。修法在 `TODO.md` 的「内容与解析」。
 - **解析层只产出模型**（见 `parse.js` 末尾注释），绝不拼 HTML；排版全在 `view/` + `app.css`。
 - **选择器一律写在 `parse.js` 的 `SEL` 表里**，用 `first()/all()` 多路兜底，不要散落在各处。
+- **楼层锚点别把元素 id 设成 `pid…Anchor`**：被藏起来的原站 DOM 里已有同名锚点，重复 id 会让
+  `getElementById` / 原生 fragment 滚动落到隐藏的那一个。我们的楼层用 `id=pid{pid}` + `data-pid`，
+  由 `app.js` 的 `revealHashTarget()` 归一化 `#pid…Anchor / #pid… / #post1strow{N}`；
+  「复制楼层链接」仍用原站的 `#pid…Anchor`。
 - **面包屑（`parseNav`）去重不能只看 pathname**：`thread.php?fid=422` 与 `thread.php?stid=…` 是两条，
   它们的区别全在 query 里（`navKey()` 只保留 `fid/stid/tid`）。
 - **`sanitize.js` 的处理顺序不能改**：`convertQuotes/convertCollapse` 必须在 `scrubAttributes` 之前，否则 `.quote` / `.collapse` 类名会被洗掉。
@@ -112,7 +116,8 @@ extension/
 - 帖子页 `/read.php`：`#m_posts_c > table.forumbox.postbox`（**整页共用一张表**），楼层是 `tr.postrow`，
   **每层都有 `id=post1strow{N}`（N=楼层号，首楼 0，删楼跳号）**；作者
   `td.c1 span#posterinfo{N}.posterinfo > a#postauthor{N}.userlink.author`——昵称首字被拆进
-  `<b class="block_txt">湘</b>`，其余是兄弟文本节点，**完整昵称取 `<a>` 的 textContent**；正文是
+  `<b class="block_txt">湘</b>`，其余是兄弟文本节点，**完整昵称取 `<a>` 的 textContent**；
+  **楼层永久链接在 `a[name="l{N}"]` 的 href（`#pid{pid}Anchor`，首楼 pid=0）**；正文是
   `p#postcontent{N}.postcontent.ubbcode`（**别用 `[id^=postcontent]`，会先命中包装层
   `#postcontentandsubject{N}`**）；时间 `span#postdate{N}`；标题 `h3#postsubject{N}`
 - 正文里：`.quote`、`.collapse_btn` + `.collapse_content`（内容默认空）、`[id^="postsign"]`（签名，删）、

@@ -35,11 +35,12 @@
         └── tbody > tr.postrow.row1|row2  ← 「一层楼」是 tr；每层都有 id=post1strow{N}（N 为楼层号，首楼 0）
             ├── td.c1
             │   └── span#posterinfo{N}.posterinfo
+            │       ├── a[name="l{N}"][href$="#pid{pid}Anchor"] > #N   ← 楼层号链接（永久链接在这里）
             │       ├── a#postauthor{N}.userlink.author   ← 昵称（首字被拆进 <b.block_txt>）
             │       ├── img#posteravatar{N}.avatar
             │       └── .stat / .userval / .medalimg / .stat_spacer     ← 发帖数、勋章…
             └── td#postcontainer{N}.c2
-                ├── a#pid{N}Anchor                     ← 空锚点，pid 不在 DOM 里
+                ├── a#pid{pid}Anchor                   ← 空锚点；pid 从上面的楼层链接解（首楼 pid=0）
                 ├── div#postBtnPos{N}.postBtnPos       ← 赞踩按钮（JS 后填，常常是空的）
                 ├── div#postInfo{N}.postInfo
                 │   ├── a.postinfot                     ← 所属版面链接
@@ -60,6 +61,11 @@
   `<a id="postauthor{N}" class="userlink author"><b class="block_txt">湘</b>篁</a>`，
   `.block_txt` 只有首字，剩余字符是它的兄弟文本节点。完整昵称要取作者链接 `<a>` 的
   `textContent`（2026-11 真机：只读 `.block_txt` 会导致整页作者只剩一个字）。
+- **楼层永久链接在 `a[name="l{N}"]` 的 href 里**（2026-11 真机）：
+  `/read.php?tid=…&page=1#pid885491653Anchor`；首楼是 `#pid0Anchor`，`postArg` 里首楼 `pid` 也是 0。
+  复制/定位都用 `#pid{pid}Anchor`，但**克隆出来的楼层元素不要用这个 id** ——
+  被藏起来的原站 DOM 里已经有一个同名锚点，重复 id 会让 `getElementById` 和原生 fragment 滚动
+  落到隐藏的那个上。我们的楼层 id 用 `pid{pid}`（不带 Anchor），再按 hash 归一化找。
 - `[id^="postcontent"]` 会先命中包装层 `#postcontentandsubject{N}`，而且它在文档序里更靠前。
   判定正文必须精确到 `^postcontent\d+$`（`parse.js` 的 `CONTENT_ID_RE`），
   否则渲染出来的是「锁定角标 + 标题 + 正文」的外壳。

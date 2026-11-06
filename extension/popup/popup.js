@@ -5,6 +5,7 @@
 
 import { getSettings, patchSettings, toggleFavorite } from '../src/core/settings.js';
 
+const NGA_ORIGIN = 'https://ngabbs.com';
 const settings = await getSettings();
 
 /* ---- 开关 / 输入 ---- */
@@ -62,15 +63,31 @@ function renderFavorites(list) {
         .slice()
         .reverse()
         .forEach((forum) => {
-            const chip = document.createElement('button');
-            chip.type = 'button';
+            // 整颗胶囊分两半：点名字进板块（新标签页），点 × 才取消收藏
+            const chip = document.createElement('span');
             chip.className = 'pop-fav';
-            chip.textContent = `${forum.name} ×`;
-            chip.title = '点击取消收藏';
-            chip.addEventListener('click', async () => {
+
+            const open = document.createElement('a');
+            open.className = 'pop-fav-open';
+            open.href = `${NGA_ORIGIN}/thread.php?fid=${encodeURIComponent(forum.fid)}`;
+            open.target = '_blank';
+            open.rel = 'noopener';
+            open.textContent = forum.name;
+            open.title = `打开「${forum.name}」`;
+            chip.appendChild(open);
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'pop-fav-remove';
+            remove.textContent = '×';
+            remove.title = `取消收藏「${forum.name}」`;
+            remove.setAttribute('aria-label', `取消收藏 ${forum.name}`);
+            remove.addEventListener('click', async () => {
                 await toggleFavorite(forum);
                 renderFavorites((await getSettings()).favorites);
             });
+            chip.appendChild(remove);
+
             box.appendChild(chip);
         });
 }
@@ -86,7 +103,7 @@ if (versionNode) versionNode.textContent = `v${chrome.runtime.getManifest().vers
 /* ---- 底部行为 ---- */
 
 document.getElementById('open-nga').addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://ngabbs.com/' });
+    chrome.tabs.create({ url: `${NGA_ORIGIN}/` });
     window.close();
 });
 

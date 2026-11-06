@@ -9,10 +9,12 @@
     </head>
     <body>
         <!--
-          本地调试样例。**层级与类名照抄真实 ngabbs.com read.php**（2026-09 实测）：
-            #m_posts > #m_posts_c > table.forumbox.postbox > tr.postrow[.row1|.row2]（首楼 id=post1strow0）
-              td.c1 > span#posterinfo{N}.posterinfo > a#postauthor{N}.userlink.author > b.block_txt
-              td#postcontainer{N}.c2 > h3#postsubject{N} + p#postcontent{N}.postcontent.ubbcode
+          本地调试样例。**层级与类名照抄真实 ngabbs.com read.php**（2026-09 / 2026-11 实测）：
+            #m_posts > #m_posts_c > table.forumbox.postbox > tr.postrow[id=post1strow{N}]
+              td.c1 > span#posterinfo{N}.posterinfo
+                       > a[name=l{N}][href$="#pid{pid}Anchor"]  ← 楼层永久链接（首楼 pid=0）
+                       > a#postauthor{N}.userlink.author > b.block_txt（首字染色）+ 其余文本
+              td#postcontainer{N}.c2 > a#pid{pid}Anchor + h3#postsubject{N} + p#postcontent{N}.postcontent.ubbcode
                                         + div#postInfo{N}.postInfo > span#postdate{N}.postinfot.postdatec
           加 ?nopostarg=1 可跳过下面的伪站数据，单独验证选择器兜底路径。
         -->
@@ -32,6 +34,7 @@
                             <tr id="post1strow0" class="postrow row2">
                                 <td class="c1">
                                     <span id="posterinfo0" class="posterinfo">
+                                        <a name="l0" href="/read.php?tid=1234567&amp;page=1#pid0Anchor" class="small_colored_text_btn stxt block_txt_c0 vertmod">#0</a>
                                         <a id="postauthor0" class="userlink author" href="/nuke.php?func=ucp&uid=33123456"><b class="block_txt">猫</b>猫头实验体</a>
                                         <img id="posteravatar0" class="avatar" src="/dev/fixtures/avatar.png" alt="" />
                                         <div class="stat"><div class="stat_spacer"></div></div>
@@ -56,11 +59,12 @@
                             <tr id="post1strow1" class="postrow row1">
                                 <td class="c1">
                                     <span id="posterinfo1" class="posterinfo">
+                                        <a name="l1" href="/read.php?tid=1234567&amp;page=1#pid900000001Anchor" class="small_colored_text_btn stxt block_txt_c0 vertmod">#1</a>
                                         <a id="postauthor1" class="userlink author" href="/nuke.php?func=ucp&uid=32001234"><b class="block_txt">隔</b>壁老王</a>
                                     </span>
                                 </td>
                                 <td id="postcontainer1" class="c2">
-                                    <a id="pid1Anchor"></a>
+                                    <a id="pid900000001Anchor"></a>
                                     <div id="postInfo1" class="postInfo">
                                         <span id="postdate1" class="postinfot postdatec stxt">2026-09-14 12:41</span>
                                     </div>
@@ -71,11 +75,12 @@
                             <tr id="post1strow2" class="postrow row2">
                                 <td class="c1">
                                     <span id="posterinfo2" class="posterinfo">
+                                        <a name="l2" href="/read.php?tid=1234567&amp;page=1#pid900000002Anchor" class="small_colored_text_btn stxt block_txt_c0 vertmod">#2</a>
                                         <a id="postauthor2" class="userlink author" href="/nuke.php?func=ucp&uid=31009988"><b class="block_txt">深</b>渊打工仔</a>
                                     </span>
                                 </td>
                                 <td id="postcontainer2" class="c2">
-                                    <a id="pid2Anchor"></a>
+                                    <a id="pid900000002Anchor"></a>
                                     <div id="postInfo2" class="postInfo">
                                         <span id="postdate2" class="postinfot postdatec stxt">2026-09-14 13:02</span>
                                     </div>
@@ -86,11 +91,12 @@
                             <tr id="post1strow3" class="postrow row1">
                                 <td class="c1">
                                     <span id="posterinfo3" class="posterinfo">
+                                        <a name="l3" href="/read.php?tid=1234567&amp;page=1#pid900000003Anchor" class="small_colored_text_btn stxt block_txt_c0 vertmod">#3</a>
                                         <a id="postauthor3" class="userlink author" href="/nuke.php?func=ucp&uid=33556677"><b class="block_txt">手</b>残本残</a>
                                     </span>
                                 </td>
                                 <td id="postcontainer3" class="c2">
-                                    <a id="pid3Anchor"></a>
+                                    <a id="pid900000003Anchor"></a>
                                     <div id="postInfo3" class="postInfo">
                                         <span id="postdate3" class="postinfot postdatec stxt">2026-09-14 13:20</span>
                                     </div>
@@ -101,11 +107,12 @@
                             <tr id="post1strow4" class="postrow row2">
                                 <td class="c1">
                                     <span id="posterinfo4" class="posterinfo">
+                                        <a name="l4" href="/read.php?tid=1234567&amp;page=1#pid900000004Anchor" class="small_colored_text_btn stxt block_txt_c0 vertmod">#4</a>
                                         <a id="postauthor4" class="userlink author" href="/nuke.php?func=ucp&uid=33998877"><b class="block_txt">路</b>过的猫</a>
                                     </span>
                                 </td>
                                 <td id="postcontainer4" class="c2">
-                                    <a id="pid4Anchor"></a>
+                                    <a id="pid900000004Anchor"></a>
                                     <div id="postInfo4" class="postInfo">
                                         <span id="postdate4" class="postinfot postdatec stxt">2026-09-14 14:05</span>
                                     </div>
@@ -251,7 +258,7 @@
                 rows.forEach(function (row, index) {
                     var uid = row.querySelector('.posterinfo .author');
                     data[index] = {
-                        pid: 987654321 + index,
+                        pid: index === 0 ? 0 : 900000000 + index,
                         pAid: Number((uid.getAttribute('href').match(/uid=(\d+)/) || [])[1] || 0),
                         i: index,
                         lite: false,

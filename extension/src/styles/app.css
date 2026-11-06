@@ -470,6 +470,82 @@
     padding: 5px 9px;
 }
 
+/* ---------- 楼层目录 ---------- */
+
+.ngr-toc {
+    position: relative;
+}
+
+.ngr-toc > summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+.ngr-toc > summary::-webkit-details-marker {
+    display: none;
+}
+
+.ngr-toc[open] > summary {
+    border-color: var(--ng-accent);
+    background: var(--ng-accent-soft);
+    color: var(--ng-accent-fg);
+}
+
+.ngr-toc-list {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 30;
+    width: min(320px, calc(100vw - 48px));
+    max-height: min(52vh, 380px);
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid var(--ng-border-strong);
+    border-radius: var(--ng-radius);
+    background: var(--ng-surface-card);
+    box-shadow: var(--ng-shadow);
+}
+
+.ngr-toc-item {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    column-gap: 8px;
+    padding: 7px 9px;
+    border-radius: var(--ng-radius-sm);
+    color: inherit;
+    text-decoration: none;
+}
+
+.ngr-toc-item:hover {
+    background: var(--ng-surface-1);
+    color: var(--ng-accent-fg);
+}
+
+.ngr-toc-num {
+    grid-row: span 2;
+    color: var(--ng-accent-fg);
+    font-family: var(--ng-mono);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.ngr-toc-meta,
+.ngr-toc-excerpt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ngr-toc-meta {
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.ngr-toc-excerpt {
+    color: var(--ng-text-2);
+    font-size: 12px;
+}
+
 /* ==========================================================================
    帖子列表（板块页）
    ========================================================================== */
@@ -611,7 +687,8 @@
     font-variant-numeric: tabular-nums;
 }
 
-.ngr-floor:target {
+.ngr-floor:target,
+.ngr-floor.is-target {
     background: var(--ng-accent-soft);
     border-radius: var(--ng-radius-sm);
 }

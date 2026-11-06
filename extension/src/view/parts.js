@@ -85,6 +85,8 @@ export function pager(options) {
     const pageUrl = (page) => {
         const url = new URL(options.baseUrl, location.href);
         url.searchParams.set('page', String(page));
+        // 翻页不是「同一页」，别把上一页的楼层锚点带过去
+        url.hash = '';
         return url.href;
     };
 

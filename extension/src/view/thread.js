@@ -31,6 +31,7 @@ export function renderThread(model, ctx) {
                 model.posts[0] && model.posts[0].time ? compactTime(model.posts[0].time) : null,
             ],
             actions: [
+                model.posts.length > 1 ? floorDirectory(model) : null,
                 button(hideImages ? '显示图片' : '无图模式', {
                     icon: 'image',
                     active: hideImages,
@@ -63,8 +64,54 @@ export function renderThread(model, ctx) {
     return wrap;
 }
 
+/**
+ * 楼层目录：本页楼层的快速跳转。
+ * 点一项只改 hash（`#pid{pid}`），滚动与高亮交给 app.js 的 revealHashTarget。
+ */
+function floorDirectory(model) {
+    const details = el('details', { class: 'ngr-toc' });
+    const summary = el('summary', { class: 'ngr-btn', title: '本页楼层目录' });
+    summary.appendChild(icon('list', 14));
+    summary.appendChild(el('span', { text: '楼层目录' }));
+    details.appendChild(summary);
+
+    const list = el('div', { class: 'ngr-toc-list' });
+    model.posts.forEach((post) => {
+        const anchor = post.pid !== '' ? `pid${post.pid}` : post.anchor;
+        if (!anchor) return;
+        const item = el('a', {
+            class: 'ngr-toc-item',
+            href: `#${anchor}`,
+            title: `${post.floor} 楼 · ${post.author}`,
+        });
+        item.appendChild(el('span', { class: 'ngr-toc-num', text: String(post.floor).padStart(2, '0') }));
+        item.appendChild(
+            el('span', {
+                class: 'ngr-toc-meta',
+                text: [post.author, post.time ? compactTime(post.time) : ''].filter(Boolean).join(' · '),
+            })
+        );
+        item.appendChild(el('span', { class: 'ngr-toc-excerpt', text: floorExcerpt(post) }));
+        list.appendChild(item);
+    });
+
+    details.appendChild(list);
+    details.addEventListener('click', (event) => {
+        if (event.target.closest('a')) details.open = false;
+    });
+    return details;
+}
+
+function floorExcerpt(post) {
+    const text = String((post.sourceEl && post.sourceEl.textContent) || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return text.length > 42 ? `${text.slice(0, 42)}…` : text;
+}
+
 function onlyAuthorUrl(model) {
     const url = new URL(model.url, location.href);
+    url.hash = '';
     // 已经在「只看楼主」里：保留当前地址（关闭由原站链接负责）
     if (model.onlyAuthor) return url.href;
     // 楼主 uid 只有第 1 页能可靠拿到；第 2 页起 posts[0] 只是本页第一楼，
@@ -79,7 +126,12 @@ function onlyAuthorUrl(model) {
 function renderFloor(post, ctx, model) {
     const article = el('article', {
         class: 'ngr-floor' + (post.isOp ? ' is-op' : ''),
-        id: post.pid ? `pid${post.pid}` : null,
+        // 楼层元素用 pid（#pid123），但复制出来的链接用原站的 #pid123Anchor；
+        // 不能直接把 id 设成 pid…Anchor —— 被藏起来的原站 DOM 里已经有一个同名锚点，
+        // 重复 id 会让 getElementById / 原生 fragment 滚动都落到隐藏的那一个上。
+        id: post.pid !== '' ? `pid${post.pid}` : null,
+        'data-pid': post.pid !== '' ? String(post.pid) : null,
+        'data-floor': String(post.floor),
     });
 
     article.appendChild(el('span', { class: 'ngr-floor-marker', text: String(post.floor).padStart(2, '0') }));
@@ -152,8 +204,11 @@ function renderFloor(post, ctx, model) {
 }
 
 function floorUrl(model, post) {
+    // 保留 page / authorid 等参数（第 2 页的楼层链接不能再掉回第 1 页）；
+    // 锚点用原站原生的 #pid{pid}Anchor，首楼是 #pid0Anchor
     const url = new URL(model.url, location.href);
-    url.searchParams.delete('page');
-    if (post.pid) url.searchParams.set('pid', post.pid);
+    url.hash = '';
+    const anchor = post.anchor || (post.pid !== '' ? `pid${post.pid}Anchor` : '');
+    if (anchor) url.hash = anchor;
     return url.href;
 }

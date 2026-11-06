@@ -311,6 +311,59 @@ function render(model, options = {}) {
     syncAddressBar(model);
     applyTitle(model);
     recordVisit(model);
+
+    // 地址里带楼层锚点时（#pid…Anchor / #pid… / #post1strowN）滚到那一层。
+    // 这里必须同步做：requestAnimationFrame 在后台标签页会被节流/暂停，
+    // 从外部打开一个楼层链接时页面往往不在前台。
+    // keepScroll 的「重渲染」（唤醒图片 / 自愈 / 改设置）只补回高亮，不把读者拽回锚点。
+    revealHashTarget({ scroll: !options.keepScroll });
+}
+
+/**
+ * 打开带楼层锚点的地址时定位到对应楼层。
+ * NGA 的楼层永久链接是 `#pid{pid}Anchor`（首楼 pid=0）；也兼容去掉 Anchor 的写法，
+ * 以及老结构的 `#post1strow{N}`。
+ */
+function revealHashTarget(options = {}) {
+    if (!state.shell) return;
+    let raw = location.hash.replace(/^#/, '');
+    try {
+        raw = decodeURIComponent(raw);
+    } catch {
+        /* 地址里有残缺的百分号编码：按原样找，别让整页渲染挂掉 */
+    }
+    if (!raw) return;
+    // 只处理楼层锚点；别把任意 hash 拼进 querySelector（也避免误命中正文里的 id）
+    if (!/^(?:pid\d+(?:Anchor)?|post1strow\d+)$/i.test(raw)) return;
+
+    const ids = [raw];
+    const pid = raw.match(/^pid(\d+)(?:Anchor)?$/i);
+    if (pid) ids.push(`pid${pid[1]}`, `pid${pid[1]}Anchor`);
+
+    let target = null;
+    for (const id of ids) {
+        // 原站 DOM 还留在文档里（display:none），它也有 #pid…Anchor 这些 id，
+        // 所以只能在我们自己的 .ngr-main 里找，不能用 document.getElementById
+        const node = state.shell.main.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`);
+        if (node) {
+            target = node;
+            break;
+        }
+    }
+
+    if (!target) {
+        const rowId = raw.match(/^post1strow(\d+)$/i);
+        if (rowId) {
+            target = state.shell.main.querySelector(`.ngr-floor[data-floor="${Number(rowId[1]) + 1}"]`);
+        }
+    }
+    if (!target) return;
+
+    state.shell.main.querySelectorAll('.ngr-floor.is-target').forEach((node) => {
+        node.classList.remove('is-target');
+    });
+    target.classList.add('is-target');
+    if (options.scroll !== false) target.scrollIntoView({ block: 'start' });
 }
 
 function buildPage(model) {
@@ -656,4 +709,6 @@ function bindEvents() {
     document.addEventListener('keydown', onKeyDown);
     // 用冒泡阶段：占位按钮自己的处理器会先跑并 stopPropagation，不会误触发预览
     document.addEventListener('click', onImageClick);
+    // 同页内的 #pid… 链接（正文引用、楼层目录）不整页跳转，只滚动
+    window.addEventListener('hashchange', revealHashTarget);
 }

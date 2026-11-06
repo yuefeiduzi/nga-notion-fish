@@ -62,7 +62,7 @@ const SEL = {
     boardLastReplyUser: ['td.c4 .replyer', 'td.c4 span.replyer'],
 
     // 帖子页（read.php）：实测 #m_posts_c > table.forumbox.postbox 是**整个**楼层列表，
-    // 真正的「一层楼」是里面的 tr.postrow（首楼 id 为 post1strow0，其余无 id）
+    // 真正的「一层楼」是里面的 tr.postrow。2026-11 真机：每层 tr 都有 id=post1strow{N}。
     postRow: [
         '#m_posts_c tr.postrow',
         'tr.postrow',
@@ -72,6 +72,9 @@ const SEL = {
     ],
     postContent: ['[id^="postcontent"]', '.postcontent', '.ubbcode', '.post_content'],
     postSubject: ['[id^="postsubject"]', '.postsubject'],
+    // 楼层永久链接：`a[name="l{N}"]` 的 href 指向 `#pid{pid}Anchor`（首楼 pid=0）
+    postFloorAnchor: ['a[name^="l"][href*="#pid"]', 'a[href*="#pid"]'],
+    postPidAnchor: ['[id^="pid"][id$="Anchor"]'],
     postAuthorBlock: ['[id^="postauthor"]', '.posterInfoLine', '[id^="posterinfo"]', '.posterinfo', 'td.c1'],
     // 作者链接本身：昵称被 NGA 拆成「染色首字 + 兄弟文本」，只有整条链接的文本是完整昵称
     postAuthorLink: ['a#postauthor', 'a[id^="postauthor"]', 'a.userlink.author', 'a.userlink', 'a[href*="uid="]'],
@@ -221,7 +224,7 @@ function readPostArg(doc) {
         const recommend = Number(item.recommend);
 
         return {
-            pid: item.pid ? String(item.pid) : '',
+            pid: item.pid != null ? String(item.pid) : '',
             uid: item.pAid != null ? String(item.pAid) : '',
             index: typeof item.i === 'number' ? item.i : index,
             contentEl: inner || raw,
@@ -687,6 +690,25 @@ function pickTime(row) {
 
 const AUTHOR_LINK_SELECTOR = SEL.postAuthorLink.join(',');
 
+/**
+ * 楼层永久链接：NGA 的楼层号链接是
+ * `<a name="l1" href="/read.php?tid=…&page=1#pid885491653Anchor">#1</a>`，
+ * 首楼是 `#pid0Anchor`（真机实测：postArg 里首楼 pid 也是 0）。
+ * 拿不到链接时，退回空的 `a#pid{pid}Anchor`。
+ */
+function pickFloorRef(row) {
+    const link = first(row, SEL.postFloorAnchor);
+    const href = (link && link.getAttribute('href')) || '';
+    const fromHref = href.match(/#pid(\d+)Anchor/i);
+    if (fromHref) return { pid: fromHref[1], anchor: `pid${fromHref[1]}Anchor` };
+
+    const anchorNode = first(row, SEL.postPidAnchor);
+    const fromId = anchorNode && /^pid(\d+)Anchor$/i.exec(anchorNode.id || '');
+    if (fromId) return { pid: fromId[1], anchor: anchorNode.id };
+
+    return { pid: '', anchor: '' };
+}
+
 function isAuthorLink(node) {
     return isElement(node) && node.tagName === 'A' && node.matches(AUTHOR_LINK_SELECTOR);
 }
@@ -749,6 +771,8 @@ function parsePosts(doc, url, page) {
 
             posts.push({
                 pid: item.pid,
+                // 站点数据里首楼 pid 为 0（真机实测），拼出来的锚点也是 NGA 原生的 #pid0Anchor
+                anchor: item.pid !== '' ? `pid${item.pid}Anchor` : '',
                 floor: offset + index + 1,
                 // 「楼主」只可能是第 1 页的第一楼；第 2 页起首楼只是本页第一楼
                 isOp: page.current === 1 && index === 0,
@@ -783,7 +807,8 @@ function parsePosts(doc, url, page) {
         ]
             .filter(Boolean)
             .join(' ');
-        const pidMatch = idSource.match(/(\d{6,})/);
+        const pidFromId = idSource.match(/(\d{6,})/);
+        const floorRef = pickFloorRef(row);
 
         const author = pickAuthor(row);
         const floorNode = first(row, SEL.postFloor);
@@ -800,8 +825,14 @@ function parsePosts(doc, url, page) {
         const rowFloor = rowIdMatch ? Number(rowIdMatch[1]) + 1 : 0;
         const trustRowFloor = rowFloor >= offset + 1;
 
+        // 首楼 pid 就是 0，不能按「非零才算有」丢掉；锚点优先用原站楼层链接
+        const pid = floorRef.pid || (pidFromId ? pidFromId[1] : '');
+        const anchor =
+            floorRef.anchor || (rowIdMatch ? row.id : '') || (pid !== '' ? `pid${pid}Anchor` : '');
+
         posts.push({
-            pid: pidMatch ? pidMatch[1] : '',
+            pid,
+            anchor,
             // 兜底才是「20 楼/页」的估算（只在不认识 id 的老页面上用）
             floor: floorDigits || (trustRowFloor ? rowFloor : 0) || offset + index + 1,
             isOp: trustRowFloor ? rowFloor === 1 : page.current === 1 && index === 0,
@@ -908,7 +939,7 @@ export { withPage, parsePageInfo };
                           replies, views, lastReply, excerpt, isPinned }],
               page: { current, max } }
    thread : { kind, url, nav, tid, title, board: { fid, name, url },
-              posts: [{ pid, floor, isOp, author, authorUrl, uid, time,
+              posts: [{ pid, anchor, floor, isOp, author, authorUrl, uid, time,
                         recommend, subject, sourceEl }],
               page: { current, max }, totalReplies, onlyAuthor }
    blocked: { kind, url, reason, message }
